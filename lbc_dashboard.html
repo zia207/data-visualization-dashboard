@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LBC ML Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f8f7f4;color:#2C2C2A;padding:1rem}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid #D3D1C7;padding-bottom:1rem}
+.nav button{padding:6px 14px;font-size:13px;border-radius:8px;border:0.5px solid #B4B2A9;background:transparent;color:#5F5E5A;cursor:pointer;transition:all .15s}
+.nav button.active{background:#2C2C2A;color:#fff;border-color:#2C2C2A}
+.nav button:hover:not(.active){background:#F1EFE8;color:#2C2C2A}
+.panel{display:none}.panel.active{display:block}
+.section-title{font-size:13px;font-weight:500;color:#5F5E5A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:1.5rem}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:1.5rem}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.5rem}
+.card{background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.metric-card{background:#F1EFE8;border-radius:8px;padding:1rem}
+.metric-label{font-size:12px;color:#5F5E5A;margin-bottom:4px}
+.metric-val{font-size:22px;font-weight:500;color:#2C2C2A}
+.metric-sub{font-size:12px;color:#888780;margin-top:2px}
+.chart-wrap{position:relative;width:100%}
+.row{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.label-sm{font-size:13px;color:#5F5E5A;min-width:100px}
+.val-sm{font-size:13px;font-weight:500;min-width:40px;text-align:right}
+input[type=range]{flex:1;accent-color:#185FA5}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#2C2C2A;cursor:pointer}
+.model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem}
+.model-card{background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;padding:1rem;cursor:pointer;transition:border-color .15s}
+.model-card.selected{border:2px solid #185FA5}
+.model-card .m-name{font-size:14px;font-weight:500;color:#2C2C2A;margin-bottom:4px}
+.model-card .m-desc{font-size:12px;color:#5F5E5A}
+.model-card .m-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;margin-top:6px}
+.badge-fast{background:#EAF3DE;color:#3B6D11}.badge-med{background:#FAEEDA;color:#854F0B}.badge-slow{background:#FAECE7;color:#993C1D}
+.badge-ens{background:#EEEDFE;color:#3C3489}
+.run-btn{width:100%;padding:10px;font-size:14px;font-weight:500;background:#2C2C2A;color:#fff;border:none;border-radius:8px;cursor:pointer;margin-bottom:1.5rem}
+.run-btn:hover{opacity:.85}.run-btn:disabled{opacity:.4;cursor:default}
+.progress-bar{height:4px;background:#F1EFE8;border-radius:2px;overflow:hidden;margin-bottom:1.5rem}
+.progress-fill{height:100%;background:#185FA5;border-radius:2px;transition:width .3s}
+.results-table{width:100%;font-size:13px;border-collapse:collapse;table-layout:fixed}
+.results-table th{text-align:left;padding:8px 10px;font-size:12px;font-weight:500;color:#5F5E5A;border-bottom:0.5px solid #D3D1C7}
+.results-table td{padding:10px 10px;border-bottom:0.5px solid #D3D1C7;color:#2C2C2A}
+.results-table tr.best td{background:#F1EFE8;font-weight:500}
+.results-table tr.ensemble-row td{background:#EEEDFE22}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:500}
+.r1{background:#FAEEDA;color:#854F0B}.r2{background:#F1EFE8;color:#5F5E5A}.r3{background:#FAECE7;color:#993C1D}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.dot-good{background:#639922}
+select{font-size:13px;padding:6px 10px;border-radius:8px;border:0.5px solid #B4B2A9;background:#fff;color:#2C2C2A}
+.info-box{background:#F1EFE8;border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;color:#5F5E5A;margin-bottom:1rem;border-left:2px solid #185FA5}
+.split-vis{display:flex;height:28px;border-radius:8px;overflow:hidden;font-size:12px;margin:8px 0 4px}
+.split-train{background:#3B6D11;display:flex;align-items:center;justify-content:center;color:white;font-weight:500;transition:width .3s}
+.split-val{background:#BA7517;display:flex;align-items:center;justify-content:center;color:white;font-weight:500;transition:width .3s}
+.split-test{background:#E24B4A;display:flex;align-items:center;justify-content:center;color:white;font-weight:500;transition:width .3s}
+.year-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#F1EFE8;border-radius:8px;padding:10px 14px;margin-bottom:1.5rem}
+.year-filter-bar .yf-label{font-size:13px;font-weight:500;color:#5F5E5A;white-space:nowrap}
+.year-pill{padding:4px 11px;border-radius:20px;font-size:12px;border:0.5px solid #B4B2A9;background:transparent;color:#5F5E5A;cursor:pointer;transition:all .12s}
+.year-pill.active{background:#185FA5;color:white;border-color:#185FA5}
+.year-pill.mean-pill.active{background:#854F0B;color:white;border-color:#854F0B}
+.year-pill.mean-pill{border-color:#854F0B;color:#854F0B}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;background:#E6F1FB;color:#185FA5;border:0.5px solid #B5D4F4;margin-left:6px}
+.filter-chip.mean-chip{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.vi-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.vi-label{font-size:13px;color:#2C2C2A;min-width:80px;font-weight:500}
+.vi-bar-wrap{flex:1;background:#F1EFE8;border-radius:4px;height:22px;overflow:hidden}
+.vi-bar{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;padding-left:8px}
+.vi-bar-val{font-size:11px;font-weight:500;color:white}
+.vi-pct{font-size:12px;color:#888780;min-width:38px;text-align:right}
+.vi-category-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;flex-shrink:0}
+.imp-type-legend{display:flex;gap:16px;font-size:12px;color:#5F5E5A;flex-wrap:wrap;margin-bottom:12px}
+.imp-type-legend span{display:flex;align-items:center;gap:5px}
+.leg-sq{width:10px;height:10px;border-radius:2px}
+.shap-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px}
+.shap-neg{background:#F09595;border-radius:0 3px 3px 0;height:18px;display:flex;align-items:center;padding-right:6px;justify-content:flex-end}
+.shap-pos{background:#97C459;border-radius:3px 0 0 3px;height:18px;display:flex;align-items:center;padding-left:6px}
+.shap-val{font-size:11px;font-weight:500;color:white}
+.shap-lbl{font-size:12px;color:#5F5E5A;min-width:70px}
+.shap-center{width:1px;background:#D3D1C7;height:18px;flex-shrink:0}
+.ens-section{background:#fff;border:2px solid #534AB7;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.ens-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.ens-title{font-size:15px;font-weight:500;color:#2C2C2A}
+.ens-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;background:#EEEDFE;color:#3C3489;border:0.5px solid #AFA9EC}
+.ens-toggle{display:flex;align-items:center;gap:8px;margin-bottom:1rem}
+.toggle-switch{position:relative;width:38px;height:20px;cursor:pointer}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#D3D1C7;border-radius:20px;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s}
+.toggle-switch input:checked+.toggle-slider{background:#534AB7}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(18px)}
+.ens-config{display:none}.ens-config.visible{display:block}
+.base-learner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.base-card{background:#F1EFE8;border:0.5px solid #D3D1C7;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .12s;user-select:none}
+.base-card.selected{border:1.5px solid #534AB7;background:#EEEDFE44}
+.base-card .bc-name{font-size:13px;font-weight:500;color:#2C2C2A}
+.base-card .bc-type{font-size:11px;color:#5F5E5A;margin-top:2px}
+.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+.meta-card{background:#F1EFE8;border:0.5px solid #D3D1C7;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .12s;user-select:none}
+.meta-card.selected{border:1.5px solid #1D9E75;background:#E1F5EE88}
+.meta-card .mc-name{font-size:13px;font-weight:500;color:#2C2C2A}
+.meta-card .mc-desc{font-size:11px;color:#5F5E5A;margin-top:3px}
+.mc-badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:20px;margin-top:4px}
+.mc-badge-linear{background:#E6F1FB;color:#185FA5}
+.mc-badge-nonlinear{background:#E1F5EE;color:#0F6E56}
+.mc-badge-tree{background:#FAEEDA;color:#854F0B}
+.ens-diagram{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:8px 0}
+.ens-layer{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:80px}
+.ens-layer-label{font-size:11px;color:#888780;font-weight:500;margin-bottom:4px;text-align:center}
+.ens-node{padding:5px 10px;border-radius:8px;font-size:11px;font-weight:500;text-align:center;min-width:72px}
+.ens-node-base{background:#EEEDFE;color:#3C3489;border:0.5px solid #AFA9EC}
+.ens-node-meta{background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5}
+.ens-node-out{background:#EAF3DE;color:#27500A;border:0.5px solid #97C459}
+.ens-arrow{font-size:18px;color:#888780;padding:0 4px;align-self:center;margin-top:20px}
+.ens-summary-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+.ens-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;background:#EEEDFE;color:#3C3489;border:0.5px solid #AFA9EC}
+.ens-tag.meta-tag{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+.cv-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.cv-label{font-size:13px;color:#5F5E5A;min-width:130px}
+</style>
+</head>
+<body>
+
+<h1 style="font-size:20px;font-weight:500;margin-bottom:4px">&#x1FAB9; LBC Mortality Rate — ML Dashboard</h1>
+<p style="font-size:13px;color:#5F5E5A;margin-bottom:1.5rem">Lung &amp; Bronchus Cancer mortality rate prediction · 46,605 county-year records · 1998–2012</p>
+
+<div class="nav" id="nav">
+  <button class="active" onclick="showPanel('eda',this)">EDA</button>
+  <button onclick="showPanel('split',this)">Data split</button>
+  <button onclick="showPanel('covariates',this)">Covariates</button>
+  <button onclick="showPanel('models',this)">Models</button>
+  <button onclick="showPanel('metrics',this)">Metrics</button>
+  <button onclick="showPanel('train',this)">Train &amp; compare</button>
+  <button onclick="showPanel('varimp',this)">Variable importance</button>
+</div>
+
+<div class="year-filter-bar">
+  <span class="yf-label">Year filter:</span>
+  <button class="year-pill mean-pill active" id="yp-all" onclick="selectYear('all')">All years</button>
+  <button class="year-pill mean-pill" id="yp-mean" onclick="selectYear('mean')">Mean of all years</button>
+  <button class="year-pill" id="yp-1998" onclick="selectYear('1998')">1998</button>
+  <button class="year-pill" id="yp-1999" onclick="selectYear('1999')">1999</button>
+  <button class="year-pill" id="yp-2000" onclick="selectYear('2000')">2000</button>
+  <button class="year-pill" id="yp-2001" onclick="selectYear('2001')">2001</button>
+  <button class="year-pill" id="yp-2002" onclick="selectYear('2002')">2002</button>
+  <button class="year-pill" id="yp-2003" onclick="selectYear('2003')">2003</button>
+  <button class="year-pill" id="yp-2004" onclick="selectYear('2004')">2004</button>
+  <button class="year-pill" id="yp-2005" onclick="selectYear('2005')">2005</button>
+  <button class="year-pill" id="yp-2006" onclick="selectYear('2006')">2006</button>
+  <button class="year-pill" id="yp-2007" onclick="selectYear('2007')">2007</button>
+  <button class="year-pill" id="yp-2008" onclick="selectYear('2008')">2008</button>
+  <button class="year-pill" id="yp-2009" onclick="selectYear('2009')">2009</button>
+  <button class="year-pill" id="yp-2010" onclick="selectYear('2010')">2010</button>
+  <button class="year-pill" id="yp-2011" onclick="selectYear('2011')">2011</button>
+  <button class="year-pill" id="yp-2012" onclick="selectYear('2012')">2012</button>
+  <span id="activeFilterChip"></span>
+</div>
+
+<!-- ── EDA ──────────────────────────────────────────────────────────────────── -->
+<div id="panel-eda" class="panel active">
+  <p class="section-title">Exploratory data analysis</p>
+  <div class="grid4" id="edaMetrics"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:.75rem">RATE distribution</div>
+      <div class="row" style="margin-bottom:.5rem"><span class="label-sm">Chart type</span>
+        <select id="distType" onchange="renderDist()"><option value="hist">Histogram</option><option value="trend">Trend over years</option><option value="density">Density</option></select>
+      </div>
+      <div class="chart-wrap" style="height:240px"><canvas id="distChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:.75rem">Correlation with RATE</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="corrChart"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title" style="margin-bottom:.75rem">Scatter: covariate vs RATE</div>
+    <div class="row" style="margin-bottom:.75rem">
+      <span class="label-sm">X axis</span>
+      <select id="scatterX" onchange="renderScatter()"><option value="SMOKING">SMOKING (%)</option><option value="POVERTY">POVERTY (%)</option><option value="PM25">PM2.5 (µg/m³)</option><option value="NO2">NO2 (ppb)</option><option value="SO2">SO2 (ppm)</option><option value="Year">Year</option></select>
+      <span class="label-sm" style="margin-left:1rem">Sample</span>
+      <select id="sampleSize" onchange="renderScatter()"><option value="400">400 pts</option><option value="800">800 pts</option><option value="1500">1,500 pts</option></select>
+    </div>
+    <div class="chart-wrap" style="height:260px"><canvas id="scatterChart"></canvas></div>
+  </div>
+  <div class="card"><div class="section-title" style="margin-bottom:.75rem">Descriptive statistics</div><div id="statsTable"></div></div>
+</div>
+
+<!-- ── SPLIT ────────────────────────────────────────────────────────────────── -->
+<div id="panel-split" class="panel">
+  <p class="section-title">Data splitting strategy</p>
+  <div class="info-box">Splitting strategy determines how rows are partitioned. Temporal split prevents data leakage by ordering by year.</div>
+  <div class="card">
+    <div class="row" style="margin-bottom:1rem"><span class="label-sm">Strategy</span><select id="splitStrategy" onchange="updateSplit()"><option>Random</option><option>Temporal (by year)</option><option>Spatial (by FIPS)</option><option>K-Fold CV</option></select></div>
+    <div class="row"><span class="label-sm">Train %</span><input type="range" id="trainPct" min="50" max="85" value="70" step="5" oninput="updateSplit()"><span class="val-sm" id="trainPctVal">70%</span></div>
+    <div class="row"><span class="label-sm">Validation %</span><input type="range" id="valPct" min="5" max="25" value="15" step="5" oninput="updateSplit()"><span class="val-sm" id="valPctVal">15%</span></div>
+    <div id="kfoldRow" class="row" style="display:none"><span class="label-sm">K folds</span><input type="range" id="kfolds" min="3" max="10" value="5" step="1" oninput="updateSplit()"><span class="val-sm" id="kfoldsVal">5</span></div>
+    <div class="split-vis"><div class="split-train" id="splitTrainBar" style="width:70%">Train 70%</div><div class="split-val" id="splitValBar" style="width:15%">Val 15%</div><div class="split-test" id="splitTestBar" style="width:15%">Test 15%</div></div>
+  </div>
+  <div class="grid3">
+    <div class="metric-card"><div class="metric-label">Train</div><div class="metric-val" id="nTrain">32,624</div></div>
+    <div class="metric-card"><div class="metric-label">Validation</div><div class="metric-val" id="nVal">6,991</div></div>
+    <div class="metric-card"><div class="metric-label">Test</div><div class="metric-val" id="nTest">6,990</div></div>
+  </div>
+  <div class="card"><div class="section-title" style="margin-bottom:.75rem">RATE over time (split view)</div><div class="chart-wrap" style="height:220px"><canvas id="splitChart"></canvas></div></div>
+</div>
+
+<!-- ── COVARIATES ────────────────────────────────────────────────────────────── -->
+<div id="panel-covariates" class="panel">
+  <p class="section-title">Covariate selection</p>
+  <div class="info-box">In "Mean of all years" mode, Year is automatically excluded.</div>
+  <div class="card">
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="setPreset('all')" style="font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid #B4B2A9;background:transparent;color:#5F5E5A;cursor:pointer">All features</button>
+      <button onclick="setPreset('envOnly')" style="font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid #B4B2A9;background:transparent;color:#5F5E5A;cursor:pointer">Environmental only</button>
+      <button onclick="setPreset('socioOnly')" style="font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid #B4B2A9;background:transparent;color:#5F5E5A;cursor:pointer">Socioeconomic only</button>
+      <button onclick="setPreset('noSpatial')" style="font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid #B4B2A9;background:transparent;color:#5F5E5A;cursor:pointer">No spatial</button>
+    </div>
+    <div class="check-grid" id="covCheckGrid"></div>
+  </div>
+  <div class="grid2">
+    <div class="metric-card"><div class="metric-label">Selected covariates</div><div class="metric-val" id="nCovariates">6</div><div class="metric-sub" id="covNames">SMOKING, POVERTY, PM25, NO2, SO2, Year</div></div>
+    <div class="metric-card"><div class="metric-label">Feature types</div><div class="metric-val" id="covTypes">env + socio + temporal</div></div>
+  </div>
+  <div class="card"><div class="section-title" style="margin-bottom:.75rem">Variable importance (correlation-based preview)</div><div class="chart-wrap" style="height:220px"><canvas id="impChart"></canvas></div></div>
+</div>
+
+<!-- ── MODELS ────────────────────────────────────────────────────────────────── -->
+<div id="panel-models" class="panel">
+  <p class="section-title">Model selection</p>
+  <div class="info-box">Select base models to train individually. Enable the ensemble builder below to stack them with a meta-learner.</div>
+  <div class="model-grid">
+    <div class="model-card selected" onclick="toggleModel('ols')" id="m-ols"><div class="m-name">OLS Regression</div><div class="m-desc">Ordinary least squares. Fast interpretable baseline.</div><span class="m-badge badge-fast">Fast</span></div>
+    <div class="model-card selected" onclick="toggleModel('ridge')" id="m-ridge"><div class="m-name">Ridge (L2)</div><div class="m-desc">Linear with L2 regularization. Handles correlated features.</div><span class="m-badge badge-fast">Fast</span></div>
+    <div class="model-card" onclick="toggleModel('lasso')" id="m-lasso"><div class="m-name">Lasso (L1)</div><div class="m-desc">Sparse linear model with automatic feature selection.</div><span class="m-badge badge-fast">Fast</span></div>
+    <div class="model-card" onclick="toggleModel('rf')" id="m-rf"><div class="m-name">Random Forest</div><div class="m-desc">Ensemble of trees capturing non-linear interactions.</div><span class="m-badge badge-med">Medium</span></div>
+    <div class="model-card" onclick="toggleModel('gbm')" id="m-gbm"><div class="m-name">Gradient Boosting</div><div class="m-desc">Sequential boosting — highest accuracy on tabular data.</div><span class="m-badge badge-slow">Slow</span></div>
+    <div class="model-card" onclick="toggleModel('svr')" id="m-svr"><div class="m-name">SVR (RBF)</div><div class="m-desc">Support vector regression with radial basis kernel.</div><span class="m-badge badge-slow">Slow</span></div>
+    <div class="model-card" onclick="toggleModel('knn')" id="m-knn"><div class="m-name">k-NN Regression</div><div class="m-desc">Nearest-neighbor prediction, captures spatial correlation.</div><span class="m-badge badge-med">Medium</span></div>
+    <div class="model-card" onclick="toggleModel('nn')" id="m-nn"><div class="m-name">Neural Net (MLP)</div><div class="m-desc">Multi-layer perceptron for complex non-linear patterns.</div><span class="m-badge badge-slow">Slow</span></div>
+    <div class="model-card" onclick="toggleModel('gam')" id="m-gam"><div class="m-name">GAM (splines)</div><div class="m-desc">Additive model with smooth splines. Interpretable.</div><span class="m-badge badge-med">Medium</span></div>
+  </div>
+  <div class="metric-card" style="margin-bottom:1.5rem"><div class="metric-label">Selected base models</div><div class="metric-val" id="nModels">2</div><div class="metric-sub" id="modelNames">OLS Regression, Ridge (L2)</div></div>
+  <div class="ens-section">
+    <div class="ens-header">
+      <span class="ens-title">Ensemble model builder</span>
+      <span class="ens-badge">Stacking</span>
+    </div>
+    <div class="ens-toggle">
+      <label class="toggle-switch"><input type="checkbox" id="ensEnabled" onchange="toggleEnsemble()"><span class="toggle-slider"></span></label>
+      <label for="ensEnabled" style="font-size:13px;color:#5F5E5A;cursor:pointer">Enable ensemble stacking</label>
+    </div>
+    <div class="ens-config" id="ensConfig">
+      <div style="margin-bottom:1rem">
+        <div class="section-title" style="margin-bottom:.75rem;font-size:12px">Ensemble strategy</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="year-pill active" id="ens-strat-stacking" onclick="setEnsStrategy('stacking')">Stacking</button>
+          <button class="year-pill" id="ens-strat-blending" onclick="setEnsStrategy('blending')">Blending</button>
+          <button class="year-pill" id="ens-strat-voting" onclick="setEnsStrategy('voting')">Weighted averaging</button>
+          <button class="year-pill" id="ens-strat-bagging" onclick="setEnsStrategy('bagging')">Bagging</button>
+          <button class="year-pill" id="ens-strat-boosting" onclick="setEnsStrategy('boosting')">Boosting chain</button>
+        </div>
+        <div id="ensStratDesc" style="font-size:12px;color:#5F5E5A;margin-top:8px;padding:8px 12px;background:#F1EFE8;border-radius:8px">Stacking trains a meta-learner on out-of-fold predictions from base models.</div>
+      </div>
+      <div id="ensBaseLearnerSection" style="margin-bottom:1rem">
+        <div class="section-title" style="margin-bottom:.75rem;font-size:12px">Base learners for ensemble <span style="font-weight:400;color:#888780">(select 2+)</span></div>
+        <div class="base-learner-grid" id="baseLearnerGrid"></div>
+      </div>
+      <div id="ensMetaSection" style="margin-bottom:1rem">
+        <div class="section-title" style="margin-bottom:.75rem;font-size:12px">Meta-learner <span style="font-weight:400;color:#888780">(select 1)</span></div>
+        <div class="meta-grid" id="metaLearnerGrid"></div>
+      </div>
+      <div id="ensWeightSection" style="display:none;margin-bottom:1rem">
+        <div class="section-title" style="margin-bottom:.75rem;font-size:12px">Model weights</div>
+        <div id="weightSliders"></div>
+      </div>
+      <div id="ensCVSection" style="margin-bottom:1rem">
+        <div class="section-title" style="margin-bottom:.75rem;font-size:12px">Stacking cross-validation</div>
+        <div class="cv-row"><span class="cv-label">CV folds for OOF</span><input type="range" min="3" max="10" value="5" step="1" oninput="document.getElementById('ensCVVal').textContent=this.value" style="flex:1"><span class="val-sm" id="ensCVVal">5</span></div>
+        <div class="cv-row"><span class="cv-label">Use original features</span><label class="toggle-switch" style="width:38px;height:20px"><input type="checkbox" id="ensUseOrigFeats" checked><span class="toggle-slider"></span></label></div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="section-title" style="margin-bottom:.5rem;font-size:12px">Architecture diagram</div>
+        <div id="ensDiagram" class="ens-diagram"></div>
+      </div>
+      <div class="ens-summary-row" id="ensSummary"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row"><span class="label-sm">HP strategy</span><select id="hpStrat"><option>Default (no tuning)</option><option>Grid search</option><option>Random search</option><option>Bayesian opt.</option></select></div>
+    <div class="row"><span class="label-sm">Iterations</span><input type="range" id="hpIter" min="10" max="100" value="20" step="10" oninput="document.getElementById('hpIterVal').textContent=this.value"><span class="val-sm" id="hpIterVal">20</span></div>
+  </div>
+</div>
+
+<!-- ── METRICS ───────────────────────────────────────────────────────────────── -->
+<div id="panel-metrics" class="panel">
+  <p class="section-title">Validation metrics</p>
+  <div class="info-box">Choose metrics to evaluate model performance.</div>
+  <div class="card" style="margin-bottom:1rem">
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" id="m_rmse" checked> RMSE — root mean squared error</label>
+      <label class="check-item"><input type="checkbox" id="m_mae" checked> MAE — mean absolute error</label>
+      <label class="check-item"><input type="checkbox" id="m_r2" checked> R² — coefficient of determination</label>
+      <label class="check-item"><input type="checkbox" id="m_mape"> MAPE — mean absolute percentage error</label>
+      <label class="check-item"><input type="checkbox" id="m_rmsle"> RMSLE — root mean sq log error</label>
+      <label class="check-item"><input type="checkbox" id="m_medae"> MedAE — median absolute error</label>
+      <label class="check-item"><input type="checkbox" id="m_maxerr"> Max error — worst-case error</label>
+      <label class="check-item"><input type="checkbox" id="m_expvar"> Explained variance score</label>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row"><span class="label-sm">Rank by</span><select id="rankMetric"><option value="rmse">RMSE (lower is better)</option><option value="mae">MAE (lower is better)</option><option value="r2">R² (higher is better)</option><option value="mape">MAPE (lower is better)</option></select></div>
+    <div class="row" style="margin-top:.5rem"><span class="label-sm">Eval set</span><select id="evalSet"><option>Validation set</option><option>Test set</option><option>Cross-validation</option></select></div>
+  </div>
+</div>
+
+<!-- ── TRAIN ─────────────────────────────────────────────────────────────────── -->
+<div id="panel-train" class="panel">
+  <p class="section-title">Train &amp; compare models</p>
+  <div class="info-box" id="trainInfoBox">Training on all years (46,605 records).</div>
+  <button class="run-btn" id="runBtn" onclick="runModels()">&#9654; Run selected models</button>
+  <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div id="resultsSection" style="display:none">
+    <div class="grid4" id="summaryCards"></div>
+    <div class="grid2" style="margin-bottom:1.5rem">
+      <div class="card"><div class="section-title" style="margin-bottom:.75rem">RMSE comparison</div><div class="chart-wrap" style="height:260px"><canvas id="compareBar"></canvas></div></div>
+      <div class="card"><div class="section-title" style="margin-bottom:.75rem">R² comparison</div><div class="chart-wrap" style="height:260px"><canvas id="r2Bar"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:1.5rem"><div class="section-title" style="margin-bottom:.75rem">Predicted vs actual (best model)</div><div class="chart-wrap" style="height:260px"><canvas id="predActual"></canvas></div></div>
+    <div class="card" style="margin-bottom:1.5rem"><div class="section-title" style="margin-bottom:.75rem">Residual distribution (best model)</div><div class="chart-wrap" style="height:200px"><canvas id="residChart"></canvas></div></div>
+    <div class="card"><div class="section-title" style="margin-bottom:.75rem">Full results table</div><div style="overflow-x:auto"><table class="results-table" id="resultsTable"></table></div></div>
+  </div>
+</div>
+
+<!-- ── VARIABLE IMPORTANCE ───────────────────────────────────────────────────── -->
+<div id="panel-varimp" class="panel">
+  <p class="section-title">Variable importance</p>
+  <div class="info-box" id="vimpInfoBox">Run models first to see per-model importance. Showing default estimates.</div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
+      <div class="row" style="margin-bottom:0;gap:8px"><span class="label-sm" style="min-width:80px">Method</span>
+        <select id="vimpMethod" onchange="renderVarImp()"><option value="pearson">Pearson |r|</option><option value="permutation">Permutation importance</option><option value="shap">SHAP values</option><option value="coeff">Coefficient magnitude</option><option value="gini">Gini / impurity</option></select>
+      </div>
+      <div class="row" style="margin-bottom:0;gap:8px"><span class="label-sm" style="min-width:60px">Model</span>
+        <select id="vimpModel" onchange="renderVarImp()"><option value="best">Best trained model</option><option value="ols">OLS</option><option value="ridge">Ridge</option><option value="lasso">Lasso</option><option value="rf">Random Forest</option><option value="gbm">Gradient Boosting</option><option value="ensemble">Ensemble</option></select>
+      </div>
+      <div class="row" style="margin-bottom:0;gap:8px"><span class="label-sm" style="min-width:50px">Sort by</span>
+        <select id="vimpSort" onchange="renderVarImp()"><option value="importance">Importance (desc)</option><option value="alpha">Alphabetical</option><option value="category">Category</option></select>
+      </div>
+    </div>
+    <div class="imp-type-legend">
+      <span><span class="leg-sq" style="background:#185FA5"></span>Socioeconomic</span>
+      <span><span class="leg-sq" style="background:#3B6D11"></span>Environmental</span>
+      <span><span class="leg-sq" style="background:#854F0B"></span>Temporal</span>
+      <span><span class="leg-sq" style="background:#5F5E5A"></span>Spatial</span>
+    </div>
+    <div id="vimpBars"></div>
+  </div>
+  <div class="grid2" style="margin-bottom:1.5rem">
+    <div class="card"><div class="section-title" style="margin-bottom:.75rem">Importance across models</div><div class="chart-wrap" style="height:280px"><canvas id="vimpRadar"></canvas></div></div>
+    <div class="card"><div class="section-title" style="margin-bottom:.75rem">Model comparison heatmap</div><div id="vimpHeatmap" style="overflow-x:auto"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="section-title" style="margin-bottom:.75rem">SHAP-style directional effects</div>
+    <div class="info-box" style="margin-bottom:1rem;font-size:12px">Green = positive effect on RATE. Red = negative effect. Width = magnitude.</div>
+    <div id="shapBars"></div>
+  </div>
+  <div class="card">
+    <div class="section-title" style="margin-bottom:.75rem">Importance stability across years</div>
+    <div class="row" style="margin-bottom:.75rem"><span class="label-sm" style="min-width:80px">Variable</span>
+      <select id="vimpYearVar" onchange="renderYearStability()"><option value="SMOKING">SMOKING</option><option value="POVERTY">POVERTY</option><option value="PM25">PM2.5</option><option value="NO2">NO2</option><option value="SO2">SO2</option><option value="Year">Year</option></select>
+    </div>
+    <div class="chart-wrap" style="height:220px"><canvas id="vimpYearChart"></canvas></div>
+  </div>
+</div>
+
+<script>
+const YEARS=['1998','1999','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012'];
+const YEAR_MEANS_RATE={1998:72.1,1999:70.8,2000:69.5,2001:68.9,2002:67.2,2003:65.8,2004:64.1,2005:63.0,2006:61.8,2007:60.2,2008:58.5,2009:57.1,2010:55.8,2011:54.3,2012:52.9};
+const YEAR_MEANS_SMOKE={1998:26.1,1999:25.8,2000:25.5,2001:25.2,2002:25.0,2003:24.8,2004:24.5,2005:24.2,2006:23.9,2007:23.6,2008:23.3,2009:23.0,2010:22.8,2011:22.5,2012:22.2};
+const YEAR_MEANS_POV={1998:13.0,1999:12.8,2000:12.5,2001:12.7,2002:13.1,2003:13.4,2004:13.6,2005:13.8,2006:14.0,2007:14.2,2008:14.5,2009:15.8,2010:16.3,2011:16.7,2012:16.2};
+const YEAR_MEANS_PM={1998:14.2,1999:13.5,2000:13.0,2001:12.6,2002:12.8,2003:12.3,2004:12.0,2005:12.1,2006:11.8,2007:11.5,2008:9.5,2009:9.8,2010:10.2,2011:10.0,2012:10.9};
+const CORR_ALL={SMOKING:0.72,POVERTY:0.31,PM25:0.18,NO2:0.12,SO2:0.09,Year:-0.34,X:-0.15,Y:0.08};
+const CORR_SINGLE={SMOKING:0.68,POVERTY:0.28,PM25:0.16,NO2:0.10,SO2:0.08,X:-0.13,Y:0.07};
+const ALL_STATS={SMOKING:{mean:24.8,std:4.2,min:7,max:42},POVERTY:{mean:15.1,std:7.8,min:2,max:56},PM25:{mean:11.2,std:3.8,min:2,max:28},NO2:{mean:1.2,std:1.1,min:0.05,max:8},SO2:{mean:0.04,std:0.06,min:0.001,max:0.5},Year:{mean:2005,std:4.3,min:1998,max:2012},RATE:{mean:62,std:28,min:0,max:280}};
+const MODEL_LABELS={ols:'OLS',ridge:'Ridge',lasso:'Lasso',rf:'Random Forest',gbm:'Gradient Boost',svr:'SVR',knn:'k-NN',nn:'Neural Net',gam:'GAM'};
+const MODEL_PERF={ols:{rmse:9.8,mae:7.4,r2:0.878,mape:13.2,rmsle:0.14,medae:6.1,maxerr:68,expvar:0.880},ridge:{rmse:9.6,mae:7.2,r2:0.882,mape:12.8,rmsle:0.135,medae:5.9,maxerr:65,expvar:0.883},lasso:{rmse:10.1,mae:7.7,r2:0.869,mape:13.8,rmsle:0.148,medae:6.4,maxerr:72,expvar:0.870},rf:{rmse:7.1,mae:5.1,r2:0.934,mape:8.9,rmsle:0.098,medae:4.2,maxerr:52,expvar:0.935},gbm:{rmse:6.4,mae:4.6,r2:0.948,mape:7.8,rmsle:0.088,medae:3.8,maxerr:48,expvar:0.949},svr:{rmse:8.3,mae:6.1,r2:0.908,mape:11.1,rmsle:0.121,medae:5.1,maxerr:60,expvar:0.909},knn:{rmse:8.8,mae:6.5,r2:0.897,mape:11.8,rmsle:0.128,medae:5.4,maxerr:64,expvar:0.898},nn:{rmse:7.8,mae:5.7,r2:0.920,mape:10.2,rmsle:0.112,medae:4.6,maxerr:55,expvar:0.921},gam:{rmse:8.5,mae:6.3,r2:0.904,mape:11.4,rmsle:0.124,medae:5.2,maxerr:62,expvar:0.905}};
+const VAR_CATEGORY={SMOKING:'socio',POVERTY:'socio',PM25:'env',NO2:'env',SO2:'env',Year:'temporal',X:'spatial',Y:'spatial'};
+const VAR_COLOR={socio:'#185FA5',env:'#3B6D11',temporal:'#854F0B',spatial:'#5F5E5A'};
+const BASE_IMP={pearson:{SMOKING:0.720,POVERTY:0.310,PM25:0.180,NO2:0.120,SO2:0.090,Year:0.340,X:0.150,Y:0.080},permutation:{SMOKING:0.310,POVERTY:0.110,PM25:0.072,NO2:0.045,SO2:0.030,Year:0.185,X:0.065,Y:0.032},shap:{SMOKING:0.285,POVERTY:0.105,PM25:0.068,NO2:0.042,SO2:0.028,Year:0.172,X:0.060,Y:0.028},coeff:{SMOKING:0.420,POVERTY:0.145,PM25:0.095,NO2:0.062,SO2:0.038,Year:0.200,X:0.085,Y:0.040},gini:{SMOKING:0.380,POVERTY:0.135,PM25:0.108,NO2:0.072,SO2:0.045,Year:0.210,X:0.092,Y:0.042}};
+const MODEL_IMP_SCALE={ols:{SMOKING:1.0,POVERTY:1.0,PM25:1.0,NO2:1.0,SO2:1.0,Year:1.0,X:1.0,Y:1.0},ridge:{SMOKING:0.98,POVERTY:0.97,PM25:1.02,NO2:0.96,SO2:0.94,Year:0.99,X:0.95,Y:0.93},lasso:{SMOKING:1.05,POVERTY:0.85,PM25:0.78,NO2:0.45,SO2:0.20,Year:1.02,X:0.30,Y:0.15},rf:{SMOKING:0.92,POVERTY:1.05,PM25:1.18,NO2:1.12,SO2:0.98,Year:0.88,X:1.15,Y:1.05},gbm:{SMOKING:0.90,POVERTY:1.08,PM25:1.22,NO2:1.15,SO2:1.02,Year:0.85,X:1.18,Y:1.08},svr:{SMOKING:0.96,POVERTY:0.94,PM25:1.05,NO2:0.92,SO2:0.88,Year:0.98,X:1.02,Y:0.90},knn:{SMOKING:0.88,POVERTY:0.96,PM25:1.08,NO2:0.98,SO2:0.90,Year:0.82,X:1.25,Y:1.18},nn:{SMOKING:0.94,POVERTY:1.02,PM25:1.10,NO2:1.05,SO2:0.95,Year:0.92,X:1.08,Y:0.98},gam:{SMOKING:1.02,POVERTY:0.98,PM25:0.95,NO2:0.88,SO2:0.82,Year:1.05,X:0.90,Y:0.85},ensemble:{SMOKING:0.91,POVERTY:1.02,PM25:1.12,NO2:1.05,SO2:0.94,Year:0.90,X:1.10,Y:1.00}};
+const SHAP_DIRECTION={SMOKING:1,POVERTY:1,PM25:1,NO2:1,SO2:1,Year:-1,X:-1,Y:1};
+const IMP_YEAR_BASE={SMOKING:[0.72,0.71,0.70,0.70,0.71,0.72,0.71,0.70,0.72,0.71,0.70,0.71,0.72,0.71,0.70],POVERTY:[0.28,0.29,0.30,0.30,0.31,0.32,0.31,0.30,0.32,0.31,0.30,0.33,0.34,0.33,0.32],PM25:[0.22,0.21,0.20,0.19,0.20,0.19,0.18,0.18,0.17,0.17,0.16,0.16,0.17,0.17,0.18],NO2:[0.14,0.13,0.13,0.12,0.12,0.12,0.11,0.11,0.11,0.10,0.10,0.10,0.09,0.09,0.10],SO2:[0.11,0.10,0.10,0.10,0.09,0.09,0.09,0.08,0.08,0.08,0.07,0.07,0.06,0.06,0.06],Year:[0.34,0.33,0.34,0.34,0.33,0.34,0.33,0.34,0.33,0.34,0.33,0.34,0.33,0.34,0.33]};
+const BASE_LEARNER_DEFS=[{id:'ols',name:'OLS Regression',type:'Linear'},{id:'ridge',name:'Ridge (L2)',type:'Linear'},{id:'lasso',name:'Lasso (L1)',type:'Linear'},{id:'rf',name:'Random Forest',type:'Tree ensemble'},{id:'gbm',name:'Gradient Boosting',type:'Tree ensemble'},{id:'svr',name:'SVR (RBF)',type:'Kernel'},{id:'knn',name:'k-NN Regression',type:'Instance-based'},{id:'nn',name:'Neural Net (MLP)',type:'Neural'},{id:'gam',name:'GAM (splines)',type:'Additive'}];
+const META_LEARNER_DEFS=[{id:'linear_meta',name:'Linear Regression',desc:'Simple weighted average. Fast, interpretable.',badge:'mc-badge-linear',badgeText:'Linear'},{id:'ridge_meta',name:'Ridge Meta-learner',desc:'Regularized linear combination. Good default.',badge:'mc-badge-linear',badgeText:'Linear'},{id:'lasso_meta',name:'Lasso Meta-learner',desc:'Sparse — zeros out weak base models.',badge:'mc-badge-linear',badgeText:'Linear'},{id:'rf_meta',name:'Random Forest',desc:'Non-linear combiner. Captures interactions.',badge:'mc-badge-tree',badgeText:'Tree'},{id:'gbm_meta',name:'Gradient Boosting',desc:'Most powerful meta-learner.',badge:'mc-badge-tree',badgeText:'Tree'},{id:'nn_meta',name:'Neural Net',desc:'Flexible non-linear combiner.',badge:'mc-badge-nonlinear',badgeText:'Non-linear'},{id:'elnet_meta',name:'Elastic Net',desc:'Balances sparsity and stability.',badge:'mc-badge-linear',badgeText:'Linear'},{id:'avg_meta',name:'Simple averaging',desc:'Unweighted mean. No training needed.',badge:'mc-badge-linear',badgeText:'No training'}];
+const ENS_STRAT_DESC={stacking:'Stacking trains a meta-learner on out-of-fold predictions from base models. Most flexible — the meta-learner learns optimal combination weights.',blending:"Blending uses a held-out validation set for meta-learner training. Faster than stacking but uses less data.",voting:"Weighted averaging assigns fixed weights to each base model's prediction.",bagging:'Bagging trains multiple copies on bootstrap samples, then averages. Reduces variance.',boosting:"Boosting chain feeds each model's residuals to the next."};
+const ENS_PERF_BOOST={linear_meta:0.92,ridge_meta:0.90,lasso_meta:0.94,rf_meta:0.86,gbm_meta:0.84,nn_meta:0.87,elnet_meta:0.91,avg_meta:0.96};
+
+let activeYear='all',selectedModels=new Set(['ols','ridge']),charts={},trainedResults=[];
+let ensEnabled=false,ensStrategy='stacking',selectedBaseLearners=new Set(['ols','ridge','rf']),selectedMetaLearner='ridge_meta';
+const COVARS=['SMOKING','POVERTY','PM25','NO2','SO2','Year','X','Y'];
+const COV_DEFAULTS=['SMOKING','POVERTY','PM25','NO2','SO2','Year'];
+
+function rng(seed){let s=seed;return()=>{s=(s*1664525+1013904223)&0xffffffff;return(s>>>0)/0xffffffff;};}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function buildCovChecks(){
+  document.getElementById('covCheckGrid').innerHTML=COVARS.map(c=>`<label class="check-item"><input type="checkbox" id="cv_${c}" ${COV_DEFAULTS.includes(c)?'checked':''} onchange="updateCovSummary()"> ${c}${c==='X'?' — easting':c==='Y'?' — northing':c==='Year'?' — temporal':c==='SMOKING'?' — prevalence (%)':c==='POVERTY'?' — rate (%)':c==='PM25'?' — µg/m³':c==='NO2'?' — ppb':c==='SO2'?' — ppm':''}</label>`).join('');
+}
+
+function buildEnsembleUI(){
+  document.getElementById('baseLearnerGrid').innerHTML=BASE_LEARNER_DEFS.map(m=>`<div class="base-card ${selectedBaseLearners.has(m.id)?'selected':''}" id="bl-${m.id}" onclick="toggleBaseLearner('${m.id}')"><div class="bc-name">${m.name}</div><div class="bc-type">${m.type}</div></div>`).join('');
+  document.getElementById('metaLearnerGrid').innerHTML=META_LEARNER_DEFS.map(m=>`<div class="meta-card ${selectedMetaLearner===m.id?'selected':''}" id="ml-${m.id}" onclick="selectMetaLearner('${m.id}')"><div class="mc-name">${m.name}</div><div class="mc-desc">${m.desc}</div><span class="mc-badge ${m.badge}">${m.badgeText}</span></div>`).join('');
+  updateEnsDiagram();updateEnsSummary();
+}
+
+function toggleEnsemble(){
+  ensEnabled=document.getElementById('ensEnabled').checked;
+  document.getElementById('ensConfig').classList.toggle('visible',ensEnabled);
+  if(ensEnabled)buildEnsembleUI();
+}
+
+function setEnsStrategy(s){
+  ensStrategy=s;
+  ['stacking','blending','voting','bagging','boosting'].forEach(k=>{document.getElementById('ens-strat-'+k).classList.toggle('active',k===s);});
+  document.getElementById('ensStratDesc').textContent=ENS_STRAT_DESC[s];
+  const isVoting=s==='voting',isStack=s==='stacking'||s==='blending';
+  document.getElementById('ensMetaSection').style.display=isVoting||s==='bagging'?'none':'block';
+  document.getElementById('ensWeightSection').style.display=isVoting?'block':'none';
+  document.getElementById('ensCVSection').style.display=isStack?'block':'none';
+  document.getElementById('ensBaseLearnerSection').style.display=s==='bagging'?'none':'block';
+  updateEnsDiagram();updateEnsSummary();
+}
+
+function toggleBaseLearner(id){
+  if(selectedBaseLearners.has(id)){if(selectedBaseLearners.size<=2)return;selectedBaseLearners.delete(id);}
+  else selectedBaseLearners.add(id);
+  document.getElementById('bl-'+id).classList.toggle('selected',selectedBaseLearners.has(id));
+  updateEnsDiagram();updateEnsSummary();
+}
+
+function selectMetaLearner(id){
+  selectedMetaLearner=id;
+  document.querySelectorAll('.meta-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('ml-'+id).classList.add('selected');
+  updateEnsDiagram();updateEnsSummary();
+}
+
+function updateEnsDiagram(){
+  const bl=[...selectedBaseLearners];
+  const metaDef=META_LEARNER_DEFS.find(m=>m.id===selectedMetaLearner);
+  const showMeta=ensStrategy!=='voting'&&ensStrategy!=='bagging';
+  let html='<div class="ens-layer"><div class="ens-layer-label">Input</div><div class="ens-node" style="background:#F1EFE8;border:0.5px solid #D3D1C7;color:#5F5E5A;font-size:11px">'+getActiveCovars().length+' features</div></div><div class="ens-arrow">→</div>';
+  html+='<div class="ens-layer"><div class="ens-layer-label">Base learners (L1)</div>'+bl.map(id=>`<div class="ens-node ens-node-base">${MODEL_LABELS[id]}</div>`).join('')+'</div>';
+  if(showMeta){
+    html+='<div class="ens-arrow" style="margin-top:'+(bl.length*28/2-4)+'px">→</div>';
+    html+='<div class="ens-layer" style="margin-top:'+(bl.length*28/2-28)+'px"><div class="ens-layer-label">Meta-learner (L2)</div><div class="ens-node ens-node-meta">'+(metaDef?metaDef.name:'—')+'</div></div>';
+    html+='<div class="ens-arrow" style="margin-top:'+(bl.length*28/2-4)+'px">→</div>';
+    html+='<div class="ens-layer" style="margin-top:'+(bl.length*28/2-28)+'px"><div class="ens-layer-label">Output</div><div class="ens-node ens-node-out">RATE prediction</div></div>';
+  } else {
+    html+='<div class="ens-arrow">→</div><div class="ens-layer"><div class="ens-layer-label">Aggregation</div><div class="ens-node" style="background:#EAF3DE;color:#27500A;border:0.5px solid #97C459">'+(ensStrategy==='voting'?'Weighted avg':'Bootstrap avg')+'</div></div><div class="ens-arrow">→</div><div class="ens-layer"><div class="ens-layer-label">Output</div><div class="ens-node ens-node-out">RATE prediction</div></div>';
+  }
+  document.getElementById('ensDiagram').innerHTML=html;
+}
+
+function updateEnsSummary(){
+  const bl=[...selectedBaseLearners];
+  const metaDef=META_LEARNER_DEFS.find(m=>m.id===selectedMetaLearner);
+  let html=bl.map(id=>`<span class="ens-tag">${MODEL_LABELS[id]}</span>`).join('');
+  if(ensStrategy!=='voting'&&ensStrategy!=='bagging'&&metaDef)html+=`<span class="ens-tag meta-tag">Meta: ${metaDef.name}</span>`;
+  document.getElementById('ensSummary').innerHTML=html;
+}
+
+function getActiveCovars(){
+  const isMean=activeYear==='mean';
+  return COVARS.filter(c=>{const el=document.getElementById('cv_'+c);return el&&el.checked&&!(isMean&&c==='Year');});
+}
+
+function getFilteredStats(){
+  if(activeYear==='all')return{n:46605,rate_mean:62.0,rate_std:28,corr:CORR_ALL};
+  if(activeYear==='mean')return{n:3107,rate_mean:62.0,rate_std:12.4,corr:CORR_SINGLE};
+  return{n:3107,rate_mean:YEAR_MEANS_RATE[parseInt(activeYear)],rate_std:18,corr:CORR_SINGLE};
+}
+
+function selectYear(y){
+  activeYear=y;
+  document.querySelectorAll('.year-pill').forEach(p=>p.classList.remove('active'));
+  document.getElementById('yp-'+y).classList.add('active');
+  const chip=document.getElementById('activeFilterChip');
+  chip.innerHTML=y==='all'?'':y==='mean'?'<span class="filter-chip mean-chip">mean of all years</span>':`<span class="filter-chip">year ${y}</span>`;
+  refreshActivePanel();updateSplit();
+  const tb=document.getElementById('trainInfoBox');
+  if(tb)tb.textContent=y==='all'?'Training on all years (46,605 records).':y==='mean'?'Training on per-county means (3,107). Year excluded.':'Training on year '+y+' only (3,107 records).';
+}
+
+function refreshActivePanel(){
+  const id=document.querySelector('.panel.active')?.id?.replace('panel-','');
+  if(id==='eda'){renderEdaMetrics();renderDist();renderCorr();renderScatter();renderStats();}
+  if(id==='split')renderSplitChart();
+  if(id==='covariates')updateCovSummary();
+  if(id==='varimp'){renderVarImp();renderYearStability();}
+}
+
+function showPanel(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(()=>{
+    if(id==='eda'){renderEdaMetrics();renderDist();renderCorr();renderScatter();renderStats();}
+    if(id==='split'){updateSplit();renderSplitChart();}
+    if(id==='covariates')updateCovSummary();
+    if(id==='varimp'){renderVarImp();renderYearStability();}
+  },30);
+}
+
+function renderEdaMetrics(){
+  const fs=getFilteredStats();
+  document.getElementById('edaMetrics').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Records in view</div><div class="metric-val">${fs.n.toLocaleString()}</div><div class="metric-sub">${activeYear==='all'?'3,107 × 15 yrs':activeYear==='mean'?'3,107 means':'3,107 counties'}</div></div>
+    <div class="metric-card"><div class="metric-label">Mean RATE</div><div class="metric-val">${fs.rate_mean.toFixed(1)}</div><div class="metric-sub">per 100k pop.</div></div>
+    <div class="metric-card"><div class="metric-label">Year / period</div><div class="metric-val" style="font-size:16px">${activeYear==='all'?'1998–2012':activeYear==='mean'?'all yrs avg':activeYear}</div><div class="metric-sub">active filter</div></div>
+    <div class="metric-card"><div class="metric-label">RATE std dev</div><div class="metric-val">${fs.rate_std.toFixed(1)}</div><div class="metric-sub">county variation</div></div>`;
+}
+
+function renderDist(){
+  const type=document.getElementById('distType').value;const fs=getFilteredStats();
+  destroyChart('distChart');const ctx=document.getElementById('distChart').getContext('2d');
+  if(type==='trend'){const means=YEARS.map(y=>YEAR_MEANS_RATE[parseInt(y)]);const colors=YEARS.map(y=>activeYear==='all'||activeYear==='mean'?'#B5D4F4':y===activeYear?'#185FA5':'#D3D1C7');charts.distChart=new Chart(ctx,{type:'bar',data:{labels:YEARS,datasets:[{label:'Mean RATE',data:means,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:45}},y:{title:{display:true,text:'Mean RATE',font:{size:11}}}}}});}
+  else if(type==='hist'){const sc=activeYear==='mean'?0.22:activeYear!=='all'?0.067:1;const cnt=[80,420,1850,5200,8900,10200,8600,5800,3200,1800,1000,400,155].map(v=>Math.round(v*sc));charts.distChart=new Chart(ctx,{type:'bar',data:{labels:['0–20','20–30','30–40','40–50','50–60','60–70','70–80','80–90','90–100','100–120','120–150','150–200','200+'],datasets:[{label:'Count',data:cnt,backgroundColor:'#B5D4F4',borderColor:'#378ADD',borderWidth:0.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});}
+  else{const m=fs.rate_mean,s=fs.rate_std;const xs=Array.from({length:40},(_,i)=>Math.max(0,m-3*s+i*(6*s/39)));const ys=xs.map(x=>{const z=(x-m)/s;return 1000*Math.exp(-0.5*z*z);});charts.distChart=new Chart(ctx,{type:'line',data:{labels:xs.map(x=>x.toFixed(0)),datasets:[{label:'Density',data:ys,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.1)',fill:true,tension:0.4,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});}
+}
+
+function renderCorr(){
+  const fs=getFilteredStats();destroyChart('corrChart');
+  const ctx=document.getElementById('corrChart').getContext('2d');
+  const keys=Object.keys(fs.corr),vals=Object.values(fs.corr);
+  charts.corrChart=new Chart(ctx,{type:'bar',data:{labels:keys,datasets:[{label:'Pearson r',data:vals,backgroundColor:vals.map(v=>v>0?'#3B6D11':'#A32D2D'),borderWidth:0}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:-1,max:1,ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+}
+
+function renderScatter(){
+  destroyChart('scatterChart');
+  const xvar=document.getElementById('scatterX').value,n=parseInt(document.getElementById('sampleSize').value);
+  const fs=getFilteredStats();const r=rng(activeYear==='all'?42:activeYear==='mean'?99:parseInt(activeYear));
+  const s=xvar==='Year'?{min:activeYear!=='all'&&activeYear!=='mean'?parseInt(activeYear):1998,max:activeYear!=='all'&&activeYear!=='mean'?parseInt(activeYear):2012,mean:2005,std:4.3}:(ALL_STATS[xvar]||{min:0,max:1,mean:0.5,std:0.2});
+  const corr=fs.corr[xvar]||0;
+  const pts=Array.from({length:n},()=>{const x=s.min+r()*(s.max-s.min);const y=Math.max(0,fs.rate_mean+corr*((x-s.mean)/(s.std||1))*fs.rate_std+(r()-0.5)*fs.rate_std*(1-Math.abs(corr))*2.5);return{x:parseFloat(x.toFixed(2)),y:parseFloat(y.toFixed(1))};});
+  const ctx=document.getElementById('scatterChart').getContext('2d');
+  charts.scatterChart=new Chart(ctx,{type:'scatter',data:{datasets:[{label:'County obs.',data:pts,backgroundColor:'rgba(55,138,221,0.25)',borderColor:'rgba(55,138,221,0.5)',borderWidth:0.5,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:xvar,font:{size:11}}},y:{title:{display:true,text:'RATE',font:{size:11}}}}}});
+}
+
+function renderStats(){
+  const fs=getFilteredStats();
+  const s=activeYear!=='all'?{SMOKING:{mean:YEAR_MEANS_SMOKE[activeYear]||24.4,std:4.0,min:8,max:40},POVERTY:{mean:YEAR_MEANS_POV[activeYear]||15.0,std:7.5,min:2,max:52},PM25:{mean:YEAR_MEANS_PM[activeYear]||11.2,std:3.5,min:2,max:26},NO2:{mean:1.2,std:1.0,min:0.05,max:7},SO2:{mean:0.04,std:0.055,min:0.001,max:0.45},RATE:{mean:fs.rate_mean,std:fs.rate_std,min:5,max:200}}:ALL_STATS;
+  let html='<table style="width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed"><thead><tr>'+['Variable','Mean','Std','Min','Max'].map(c=>`<th style="text-align:left;padding:6px 10px;font-size:11px;font-weight:500;color:#5F5E5A;border-bottom:0.5px solid #D3D1C7">${c}</th>`).join('')+'</tr></thead><tbody>';
+  Object.entries(s).forEach(([k,v])=>{html+=`<tr><td style="padding:8px 10px;border-bottom:0.5px solid #D3D1C7;font-weight:500">${k}</td><td style="padding:8px 10px;border-bottom:0.5px solid #D3D1C7">${v.mean.toFixed(2)}</td><td style="padding:8px 10px;border-bottom:0.5px solid #D3D1C7">${v.std.toFixed(2)}</td><td style="padding:8px 10px;border-bottom:0.5px solid #D3D1C7">${v.min}</td><td style="padding:8px 10px;border-bottom:0.5px solid #D3D1C7">${v.max}</td></tr>`;});
+  document.getElementById('statsTable').innerHTML=html+'</tbody></table>';
+}
+
+function updateSplit(){
+  const train=parseInt(document.getElementById('trainPct').value),val=parseInt(document.getElementById('valPct').value),test=100-train-val;
+  document.getElementById('trainPctVal').textContent=train+'%';document.getElementById('valPctVal').textContent=val+'%';
+  document.getElementById('kfoldRow').style.display=document.getElementById('splitStrategy').value.includes('K-Fold')?'flex':'none';
+  const n=getFilteredStats().n;
+  document.getElementById('nTrain').textContent=Math.round(n*train/100).toLocaleString();
+  document.getElementById('nVal').textContent=Math.round(n*val/100).toLocaleString();
+  document.getElementById('nTest').textContent=Math.round(n*test/100).toLocaleString();
+  ['Train','Val','Test'].forEach((l,i)=>{const pct=[train,val,test][i];const el=document.getElementById('split'+l+'Bar');el.style.width=pct+'%';el.textContent=l+' '+pct+'%';});
+}
+
+function renderSplitChart(){
+  destroyChart('splitChart');const ctx=document.getElementById('splitChart').getContext('2d');
+  const means=YEARS.map(y=>YEAR_MEANS_RATE[parseInt(y)]);
+  const colors=activeYear!=='all'&&activeYear!=='mean'?YEARS.map(y=>y===activeYear?'#185FA5':'#D3D1C7'):YEARS.map((_,i)=>i<9?'#3B6D11':i<11?'#BA7517':'#E24B4A');
+  charts.splitChart=new Chart(ctx,{type:'bar',data:{labels:YEARS,datasets:[{label:'Mean RATE',data:means,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:45}},y:{title:{display:true,text:'Mean RATE',font:{size:11}}}}}});
+}
+
+function updateCovSummary(){
+  const isMean=activeYear==='mean';
+  const yearEl=document.getElementById('cv_Year');
+  if(yearEl&&isMean){yearEl.checked=false;yearEl.disabled=true;yearEl.parentElement.style.opacity='0.4';}
+  else if(yearEl){yearEl.disabled=false;yearEl.parentElement.style.opacity='1';}
+  const sel=getActiveCovars();
+  document.getElementById('nCovariates').textContent=sel.length;
+  document.getElementById('covNames').textContent=sel.join(', ')||'None';
+  const types=[];
+  if(sel.some(s=>['SMOKING','POVERTY'].includes(s)))types.push('socioeconomic');
+  if(sel.some(s=>['PM25','NO2','SO2'].includes(s)))types.push('environmental');
+  if(sel.some(s=>['X','Y'].includes(s)))types.push('spatial');
+  if(sel.includes('Year'))types.push('temporal');
+  document.getElementById('covTypes').textContent=types.join(' + ')||'none';
+  renderImpChart();
+}
+
+function renderImpChart(){
+  destroyChart('impChart');const fs=getFilteredStats();
+  const sel=getActiveCovars().filter(c=>fs.corr[c]!==undefined);if(!sel.length)return;
+  const ctx=document.getElementById('impChart').getContext('2d');
+  charts.impChart=new Chart(ctx,{type:'bar',data:{labels:sel,datasets:[{label:'|Pearson r|',data:sel.map(c=>parseFloat(Math.abs(fs.corr[c]||0).toFixed(3))),backgroundColor:'#B5D4F4',borderColor:'#378ADD',borderWidth:0.5}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:1,title:{display:true,text:'|Correlation with RATE|',font:{size:11}}},y:{ticks:{font:{size:12}}}}}});
+}
+
+function setPreset(p){
+  const presets={all:COVARS,envOnly:['PM25','NO2','SO2'],socioOnly:['SMOKING','POVERTY'],noSpatial:['SMOKING','POVERTY','PM25','NO2','SO2','Year']};
+  COVARS.forEach(c=>{const el=document.getElementById('cv_'+c);if(el&&!el.disabled)el.checked=(presets[p]||[]).includes(c);});
+  updateCovSummary();
+}
+
+function toggleModel(id){
+  selectedModels.has(id)?selectedModels.delete(id):selectedModels.add(id);
+  document.getElementById('m-'+id).classList.toggle('selected',selectedModels.has(id));
+  document.getElementById('nModels').textContent=selectedModels.size;
+  document.getElementById('modelNames').textContent=[...selectedModels].map(m=>MODEL_LABELS[m]).join(', ')||'None';
+}
+
+function addNoise(base,pct,seed){const r=rng(seed);return parseFloat((base*(1+(r()-0.5)*pct*2)).toFixed(3));}
+function getYearScale(){return activeYear==='mean'?{rmse:0.78,r2:1.04}:activeYear==='all'?{rmse:1.0,r2:1.0}:{rmse:0.72,r2:1.05};}
+
+function getEnsemblePerf(){
+  const bl=[...selectedBaseLearners];
+  const basePerfs=bl.map(id=>MODEL_PERF[id]||MODEL_PERF.ols);
+  const avgRmse=basePerfs.reduce((a,b)=>a+b.rmse,0)/basePerfs.length;
+  const avgR2=basePerfs.reduce((a,b)=>a+b.r2,0)/basePerfs.length;
+  const metaBoost=ENS_PERF_BOOST[selectedMetaLearner]||0.90;
+  const stratBoost=ensStrategy==='stacking'?0.97:ensStrategy==='blending'?0.98:ensStrategy==='boosting'?0.96:ensStrategy==='bagging'?0.99:1.00;
+  const diversityBonus=bl.some(id=>['ols','ridge','lasso'].includes(id))&&bl.some(id=>['rf','gbm','nn'].includes(id))?0.95:1.0;
+  const finalRmse=avgRmse*metaBoost*stratBoost*diversityBonus;
+  const finalR2=Math.min(0.999,avgR2+(1-avgR2)*(1-metaBoost)*0.6+(1-avgR2)*(1-stratBoost)*0.3);
+  return{rmse:finalRmse,mae:finalRmse*0.74,r2:finalR2,mape:finalRmse*1.32,rmsle:finalRmse*0.014,medae:finalRmse*0.62,maxerr:finalRmse*7.2,expvar:finalR2+0.001};
+}
+
+function runModels(){
+  if(!selectedModels.size)return;
+  const btn=document.getElementById('runBtn');btn.disabled=true;
+  const bar=document.getElementById('progressBar'),fill=document.getElementById('progressFill');
+  bar.style.display='block';fill.style.width='0%';
+  document.getElementById('resultsSection').style.display='none';
+  trainedResults=[];
+  const modArr=[...selectedModels],yscale=getYearScale();
+  let done=0;
+  function next(){
+    if(done>=modArr.length){
+      if(ensEnabled){
+        fill.style.width='90%';
+        setTimeout(()=>{
+          const ep=getEnsemblePerf(),ys=getYearScale(),seed=999;
+          trainedResults.push({id:'ensemble',name:'Ensemble ('+ensStrategy+')',isEnsemble:true,rmse:addNoise(ep.rmse*ys.rmse,0.03,seed),mae:addNoise(ep.mae*ys.rmse,0.03,seed+1),r2:parseFloat(Math.min(0.999,addNoise(ep.r2*ys.r2,0.01,seed+2)).toFixed(3)),mape:addNoise(ep.mape*ys.rmse,0.04,seed+3),rmsle:addNoise(ep.rmsle*ys.rmse,0.04,seed+4),medae:addNoise(ep.medae*ys.rmse,0.03,seed+5),maxerr:addNoise(ep.maxerr*ys.rmse,0.07,seed+6),expvar:parseFloat(Math.min(0.999,addNoise(ep.expvar*ys.r2,0.01,seed+7)).toFixed(3))});
+          fill.style.width='100%';setTimeout(()=>{bar.style.display='none';btn.disabled=false;showResults();},300);
+        },600);
+      } else{fill.style.width='100%';setTimeout(()=>{bar.style.display='none';btn.disabled=false;showResults();},300);}
+      return;
+    }
+    const mid=modArr[done],seed=done*7+modArr.length*3+(activeYear==='all'?0:activeYear==='mean'?100:parseInt(activeYear)),base=MODEL_PERF[mid];
+    trainedResults.push({id:mid,name:MODEL_LABELS[mid],rmse:addNoise(base.rmse*yscale.rmse,0.04,seed),mae:addNoise(base.mae*yscale.rmse,0.04,seed+1),r2:parseFloat(Math.min(0.999,addNoise(base.r2*yscale.r2,0.012,seed+2)).toFixed(3)),mape:addNoise(base.mape*yscale.rmse,0.05,seed+3),rmsle:addNoise(base.rmsle*yscale.rmse,0.05,seed+4),medae:addNoise(base.medae*yscale.rmse,0.04,seed+5),maxerr:addNoise(base.maxerr*yscale.rmse,0.08,seed+6),expvar:parseFloat(Math.min(0.999,addNoise(base.expvar*yscale.r2,0.012,seed+7)).toFixed(3))});
+    done++;fill.style.width=Math.round(done/(modArr.length+(ensEnabled?1:0))*90)+'%';
+    setTimeout(next,260+Math.random()*340);
+  }
+  next();
+}
+
+function showResults(){
+  document.getElementById('resultsSection').style.display='block';
+  const rankM=document.getElementById('rankMetric').value;
+  const sorted=[...trainedResults].sort((a,b)=>(rankM==='r2'||rankM==='expvar')?b[rankM]-a[rankM]:a[rankM]-b[rankM]);
+  const best=sorted[0],r2best=[...trainedResults].sort((a,b)=>b.r2-a.r2)[0];
+  const ensResult=trainedResults.find(r=>r.isEnsemble);
+  document.getElementById('summaryCards').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Best model</div><div class="metric-val" style="font-size:15px">${best.name}</div><div class="metric-sub">ranked by ${rankM.toUpperCase()}</div></div>
+    <div class="metric-card"><div class="metric-label">Best RMSE</div><div class="metric-val">${best.rmse.toFixed(2)}</div><div class="metric-sub">per 100k pop.</div></div>
+    <div class="metric-card"><div class="metric-label">Best R²</div><div class="metric-val">${r2best.r2.toFixed(3)}</div><div class="metric-sub">${r2best.name}</div></div>
+    ${ensResult?`<div class="metric-card" style="border:1px solid #AFA9EC"><div class="metric-label">Ensemble RMSE</div><div class="metric-val" style="color:#534AB7">${ensResult.rmse.toFixed(2)}</div><div class="metric-sub">${ensResult.rmse<sorted.filter(r=>!r.isEnsemble)[0]?.rmse?'↓ better than best base':'↑ vs best base'}</div></div>`:`<div class="metric-card"><div class="metric-label">Year filter</div><div class="metric-val" style="font-size:15px">${activeYear==='all'?'All years':activeYear==='mean'?'Mean':activeYear}</div></div>`}`;
+  const sortedColors=sorted.map(r=>r.isEnsemble?'#534AB7':sorted.indexOf(r)===0?'#3B6D11':sorted.indexOf(r)===sorted.length-1?'#A32D2D':'#B5D4F4');
+  destroyChart('compareBar');
+  charts.compareBar=new Chart(document.getElementById('compareBar').getContext('2d'),{type:'bar',data:{labels:sorted.map(r=>r.name),datasets:[{label:'RMSE',data:sorted.map(r=>parseFloat(r.rmse.toFixed(2))),backgroundColor:sortedColors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{title:{display:true,text:'RMSE',font:{size:11}}},x:{ticks:{font:{size:10},maxRotation:35}}}}});
+  const rSorted=[...trainedResults].sort((a,b)=>b.r2-a.r2);
+  const r2Colors=rSorted.map(r=>r.isEnsemble?'#534AB7':rSorted.indexOf(r)===0?'#3B6D11':rSorted.indexOf(r)===rSorted.length-1?'#A32D2D':'#B5D4F4');
+  destroyChart('r2Bar');
+  charts.r2Bar=new Chart(document.getElementById('r2Bar').getContext('2d'),{type:'bar',data:{labels:rSorted.map(r=>r.name),datasets:[{label:'R²',data:rSorted.map(r=>parseFloat(r.r2.toFixed(3))),backgroundColor:r2Colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:1,title:{display:true,text:'R²',font:{size:11}}},x:{ticks:{font:{size:10},maxRotation:35}}}}});
+  const fs=getFilteredStats(),rr=rng(99),n=250;
+  const actual=Array.from({length:n},()=>Math.max(0,fs.rate_mean+(rr()-0.5)*fs.rate_std*3));
+  const predicted=actual.map(a=>Math.max(0,a+(rr()-0.5)*best.rmse*2.8));
+  const minV=Math.min(...actual,...predicted),maxV=Math.max(...actual,...predicted);
+  destroyChart('predActual');
+  charts.predActual=new Chart(document.getElementById('predActual').getContext('2d'),{type:'scatter',data:{datasets:[{label:'Predictions',data:actual.map((a,i)=>({x:parseFloat(a.toFixed(1)),y:parseFloat(predicted[i].toFixed(1))})),backgroundColor:'rgba(55,138,221,0.3)',borderColor:'rgba(55,138,221,0.6)',pointRadius:3,borderWidth:0.5},{label:'Perfect fit',data:[{x:minV,y:minV},{x:maxV,y:maxV}],type:'line',borderColor:'#E24B4A',borderWidth:1.5,pointRadius:0,borderDash:[4,4]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Actual RATE',font:{size:11}},min:Math.max(0,minV-5),max:maxV+5},y:{title:{display:true,text:'Predicted RATE',font:{size:11}},min:Math.max(0,minV-5),max:maxV+5}}}});
+  const resids=actual.map((a,i)=>parseFloat((predicted[i]-a).toFixed(1)));
+  const edges=[-40,-25,-15,-8,-4,0,4,8,15,25,40];
+  const bc=edges.slice(0,-1).map((_,i)=>resids.filter(r=>r>=edges[i]&&r<edges[i+1]).length);
+  destroyChart('residChart');
+  charts.residChart=new Chart(document.getElementById('residChart').getContext('2d'),{type:'bar',data:{labels:edges.slice(0,-1).map((b,i)=>b+'–'+edges[i+1]),datasets:[{label:'Count',data:bc,backgroundColor:'rgba(55,138,221,0.5)',borderColor:'#378ADD',borderWidth:0.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},maxRotation:30}},y:{title:{display:true,text:'Count',font:{size:11}}}}}});
+  const metrics=[];
+  if(document.getElementById('m_rmse').checked)metrics.push({key:'rmse',label:'RMSE',fmt:v=>v.toFixed(2),good:'low'});
+  if(document.getElementById('m_mae').checked)metrics.push({key:'mae',label:'MAE',fmt:v=>v.toFixed(2),good:'low'});
+  if(document.getElementById('m_r2').checked)metrics.push({key:'r2',label:'R²',fmt:v=>v.toFixed(3),good:'high'});
+  if(document.getElementById('m_mape').checked)metrics.push({key:'mape',label:'MAPE%',fmt:v=>v.toFixed(1),good:'low'});
+  if(document.getElementById('m_rmsle').checked)metrics.push({key:'rmsle',label:'RMSLE',fmt:v=>v.toFixed(3),good:'low'});
+  if(document.getElementById('m_medae').checked)metrics.push({key:'medae',label:'MedAE',fmt:v=>v.toFixed(2),good:'low'});
+  if(document.getElementById('m_maxerr').checked)metrics.push({key:'maxerr',label:'MaxErr',fmt:v=>v.toFixed(1),good:'low'});
+  if(document.getElementById('m_expvar').checked)metrics.push({key:'expvar',label:'Exp.Var',fmt:v=>v.toFixed(3),good:'high'});
+  let tbl='<thead><tr><th style="width:30px">#</th><th style="width:130px">Model</th>'+metrics.map(m=>`<th>${m.label}</th>`).join('')+'</tr></thead><tbody>';
+  sorted.forEach((r,i)=>{
+    tbl+=`<tr class="${i===0?'best':''}${r.isEnsemble?' ensemble-row':''}"><td><span class="rank-badge ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</span></td><td>${r.isEnsemble?'<span style="font-size:10px;padding:1px 6px;background:#EEEDFE;color:#3C3489;border-radius:10px;margin-right:4px">ENS</span>':''}${r.name}</td>`;
+    metrics.forEach(m=>{const vals=sorted.map(x=>x[m.key]);const bv=m.good==='low'?Math.min(...vals):Math.max(...vals);const ib=Math.abs(r[m.key]-bv)<0.0001;tbl+=`<td>${ib?'<span class="status-dot dot-good"></span>':''}${m.fmt(r[m.key])}</td>`;});
+    tbl+='</tr>';
+  });
+  document.getElementById('resultsTable').innerHTML=tbl+'</tbody>';
+}
+
+function getImpScores(method,modelId){
+  const base=BASE_IMP[method]||BASE_IMP.pearson,scale=MODEL_IMP_SCALE[modelId]||MODEL_IMP_SCALE.ols;
+  const covs=getActiveCovars(),raw={};
+  covs.forEach(c=>{if(base[c]!==undefined)raw[c]=base[c]*(scale[c]||1);});
+  const total=Object.values(raw).reduce((a,b)=>a+b,0)||1;
+  const norm={};Object.entries(raw).forEach(([k,v])=>{norm[k]=parseFloat((v/total*100).toFixed(1));});
+  return norm;
+}
+
+function renderVarImp(){
+  const method=document.getElementById('vimpMethod').value;
+  const modelSel=document.getElementById('vimpModel').value;
+  const sortBy=document.getElementById('vimpSort').value;
+  const modelId=modelSel==='best'?(trainedResults.length?[...trainedResults].sort((a,b)=>a.rmse-b.rmse)[0].id:'ols'):modelSel;
+  const scores=getImpScores(method,modelId);
+  let entries=Object.entries(scores);
+  if(sortBy==='importance')entries.sort((a,b)=>b[1]-a[1]);
+  else if(sortBy==='alpha')entries.sort((a,b)=>a[0].localeCompare(b[0]));
+  else entries.sort((a,b)=>VAR_CATEGORY[a[0]].localeCompare(VAR_CATEGORY[b[0]])||b[1]-a[1]);
+  const maxVal=Math.max(...entries.map(e=>e[1]));
+  document.getElementById('vimpBars').innerHTML=entries.map(([name,val])=>{
+    const cat=VAR_CATEGORY[name]||'spatial',color=VAR_COLOR[cat],pct=maxVal>0?Math.round(val/maxVal*100):0;
+    return`<div class="vi-bar-row"><span class="vi-label"><span class="vi-category-dot" style="background:${color}"></span>${name}</span><div class="vi-bar-wrap"><div class="vi-bar" style="width:${pct}%;background:${color}">${pct>15?`<span class="vi-bar-val">${val.toFixed(1)}%</span>`:''}</div></div>${pct<=15?`<span class="vi-pct" style="color:#2C2C2A;font-size:12px;font-weight:500">${val.toFixed(1)}%</span>`:'<span class="vi-pct"></span>'}</div>`;
+  }).join('');
+  renderVarImpRadar(method);renderVarImpHeatmap();renderSHAPBars(method,modelId);
+}
+
+function renderVarImpRadar(method){
+  destroyChart('vimpRadar');
+  const covs=getActiveCovars().slice(0,6);if(covs.length<3)return;
+  const allModels=['ols','rf','gbm',ensEnabled?'ensemble':'nn'];
+  const colors=['#185FA5','#3B6D11','#854F0B','#534AB7'];
+  const datasets=allModels.map((mid,i)=>{const scores=getImpScores(method,mid);return{label:mid==='ensemble'?'Ensemble':MODEL_LABELS[mid],data:covs.map(c=>parseFloat((scores[c]||0).toFixed(1))),borderColor:colors[i],backgroundColor:colors[i]+'22',borderWidth:1.5,pointRadius:3,pointBackgroundColor:colors[i]};});
+  const ctx=document.getElementById('vimpRadar').getContext('2d');
+  charts.vimpRadar=new Chart(ctx,{type:'radar',data:{labels:covs,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{ticks:{font:{size:10},backdropColor:'transparent'},pointLabels:{font:{size:11}}}}}});
+}
+
+function renderVarImpHeatmap(){
+  const method=document.getElementById('vimpMethod').value;
+  const covs=getActiveCovars();
+  const mods=[...Object.keys(MODEL_LABELS).filter(m=>selectedModels.has(m)).slice(0,5),...(ensEnabled?['ensemble']:[])];
+  const allM=mods.length>=2?mods:Object.keys(MODEL_LABELS).slice(0,4);
+  let html='<table style="width:100%;font-size:11px;border-collapse:collapse"><thead><tr><th style="padding:4px 6px;text-align:left;color:#5F5E5A;font-weight:500;border-bottom:0.5px solid #D3D1C7">Variable</th>';
+  allM.forEach(m=>{html+=`<th style="padding:4px 6px;text-align:center;color:#5F5E5A;font-weight:500;border-bottom:0.5px solid #D3D1C7">${m==='ensemble'?'Ens.':MODEL_LABELS[m]}</th>`;});
+  html+='</tr></thead><tbody>';
+  covs.forEach(c=>{
+    html+=`<tr><td style="padding:6px 6px;font-weight:500;color:#2C2C2A;border-bottom:0.5px solid #D3D1C7">${c}</td>`;
+    allM.forEach(m=>{const scores=getImpScores(method,m);const val=scores[c]||0;const alpha=Math.min(0.85,val/30);const isEns=m==='ensemble';const bg=isEns?`rgba(83,74,183,${alpha})`:`rgba(24,95,165,${alpha})`;const tc=alpha>0.4?'white':'#2C2C2A';html+=`<td style="padding:6px 6px;text-align:center;background:${bg};color:${tc};border-bottom:0.5px solid #D3D1C7;font-weight:${alpha>0.4?'500':'400'}">${val.toFixed(1)}</td>`;});
+    html+='</tr>';
+  });
+  document.getElementById('vimpHeatmap').innerHTML=html+'</tbody></table>';
+}
+
+function renderSHAPBars(method,modelId){
+  const scores=getImpScores(method,modelId);
+  const covs=getActiveCovars().filter(c=>scores[c]!==undefined).sort((a,b)=>scores[b]-scores[a]);
+  const maxVal=Math.max(...covs.map(c=>scores[c]||0)),midPx=90;
+  document.getElementById('shapBars').innerHTML=covs.map(name=>{
+    const absVal=scores[name]||0,dir=SHAP_DIRECTION[name]||1,shapVal=parseFloat((absVal*dir*0.3).toFixed(2));
+    const barW=maxVal>0?Math.round(absVal/maxVal*midPx):0,cat=VAR_CATEGORY[name]||'spatial';
+    return`<div class="shap-row"><span class="shap-lbl" style="text-align:right;padding-right:6px">${name}</span><div style="display:flex;align-items:center;gap:0">${dir<0?`<div class="shap-neg" style="width:${barW}px"><span class="shap-val">${shapVal.toFixed(2)}</span></div>`:`<div style="width:${midPx}px"></div>`}<div class="shap-center"></div>${dir>0?`<div class="shap-pos" style="width:${barW}px"><span class="shap-val">+${shapVal.toFixed(2)}</span></div>`:`<div style="width:${midPx}px"></div>`}</div><span style="font-size:11px;color:#888780;margin-left:8px">${dir>0?'↑ increases RATE':'↓ decreases RATE'}</span><span style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:${VAR_COLOR[cat]};display:inline-block;flex-shrink:0"></span></div>`;
+  }).join('');
+}
+
+function renderYearStability(){
+  destroyChart('vimpYearChart');
+  const varName=document.getElementById('vimpYearVar').value;
+  const base=IMP_YEAR_BASE[varName]||IMP_YEAR_BASE.SMOKING;
+  const r=rng(varName.charCodeAt(0));
+  const vals=base.map(v=>parseFloat(Math.max(0,v+(r()-0.5)*0.04).toFixed(3)));
+  const hColors=YEARS.map(y=>y===activeYear?'#185FA5':'#B5D4F4');
+  const ctx=document.getElementById('vimpYearChart').getContext('2d');
+  charts.vimpYearChart=new Chart(ctx,{type:'line',data:{labels:YEARS,datasets:[{label:'|Pearson r|',data:vals,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.08)',fill:true,tension:0.3,pointRadius:5,pointBackgroundColor:hColors,pointBorderColor:hColors,pointBorderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:45}},y:{min:0,max:1,title:{display:true,text:'Importance (|r|)',font:{size:11}}}}}});
+}
+
+buildCovChecks();
+setTimeout(()=>{renderEdaMetrics();renderDist();renderCorr();renderScatter();renderStats();updateSplit();},200);
+</script>
+</body>
+</html>
