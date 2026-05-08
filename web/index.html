@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LBC mortality ML dashboard — Streamlit app and static visualization.">
+  <title>LBC Dashboard</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="index.html">LBC Dashboard</a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav">
+        Menu
+      </button>
+      <nav id="site-nav" class="site-nav" aria-label="Primary">
+        <ul>
+          <li><a href="#overview">Overview</a></li>
+          <li><a href="#run">Run locally</a></li>
+          <li><a href="../lbc_dashboard.html">Static demo</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Data visualization</p>
+        <h1>Lung &amp; Bronchus Cancer mortality — ML dashboard</h1>
+        <p class="lede">
+          Explore county-level modeling, training workflows, and variable importance through
+          an interactive Streamlit app, or open the bundled static HTML prototype in your browser.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#run">Run Streamlit</a>
+          <a class="btn btn-secondary" href="../lbc_dashboard.html">Open static HTML</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="section-inner">
+        <h2>What’s included</h2>
+        <ul class="feature-list">
+          <li>
+            <strong>Streamlit dashboard</strong> — EDA, splits, models, metrics, training, and importance views
+            under <code>lbc_dashboard/</code>.
+          </li>
+          <li>
+            <strong>Standalone page</strong> — <code>lbc_dashboard.html</code> at the repo root for quick viewing
+            without Python.
+          </li>
+          <li>
+            <strong>This site</strong> — minimal HTML, CSS, and JS in <code>web/</code> as a template you can
+            extend or host (e.g. GitHub Pages with the <code>web</code> folder as the publish root).
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="run" class="section section-alt">
+      <div class="section-inner">
+        <h2>Run the Streamlit app</h2>
+        <p>From the <code>lbc_dashboard</code> directory:</p>
+        <pre class="code-block"><code>pip install -r requirements.txt
+streamlit run app.py</code></pre>
+        <p>Then open <strong>http://localhost:8501</strong> in your browser.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p><span data-year></span> LBC Dashboard project.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
