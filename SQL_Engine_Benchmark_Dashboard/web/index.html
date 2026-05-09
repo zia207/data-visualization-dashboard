@@ -52,74 +52,153 @@
 
     <section id="preview" class="section section-alt">
       <div class="section-inner">
-        <h2>Inside the Streamlit app</h2>
+        <h2>Interactive preview (like Streamlit tabs)</h2>
         <p style="margin: 0 0 1rem; color: var(--muted); font-size: 0.975rem;">
-          Mock‑up of the main screen (sidebar + benchmarks) — numbers are illustrative unless you choose the same options in app.
+          Use the <strong>tabs</strong>, <strong>sidebar controls</strong>, and <strong>Run</strong> buttons below —
+          this page is static HTML only; for real SQL execution open the Streamlit app locally.
         </p>
 
         <div class="preview-row" aria-label="Overview metrics">
           <div class="preview-card">
             <div class="label">Dataset rows</div>
-            <div class="value">50,000<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> rows</span></div>
+            <div class="value"><span id="metric-rows">50,000</span><span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> rows</span></div>
           </div>
           <div class="preview-card">
             <div class="label">Columns</div>
-            <div class="value">10<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> cols</span></div>
+            <div class="value"><span id="metric-cols">10</span><span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> cols</span></div>
           </div>
           <div class="preview-card">
             <div class="label">Memory</div>
-            <div class="value">~7<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> MB</span></div>
+            <div class="value"><span id="metric-mem">~7</span><span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> MB</span></div>
           </div>
           <div class="preview-card">
             <div class="label">Engines selected</div>
-            <div class="value">3<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> / 6</span></div>
+            <div class="value"><span id="metric-engines">3</span><span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> / 6</span></div>
           </div>
         </div>
 
-        <p style="margin: 0 0 0.5rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 600;">
-          Tabs
-        </p>
-        <div class="tab-pills" role="tablist" aria-label="Dashboard tabs">
-          <span class="tab-pill is-active" aria-current="true">⚡ Benchmark</span>
-          <span class="tab-pill">📊 Query &amp; visualize</span>
-          <span class="tab-pill">🗂 Data preview</span>
-          <span class="tab-pill">🔬 Schema &amp; stats</span>
-          <span class="tab-pill">📖 Engine guide</span>
-        </div>
+        <div class="streamlit-frame">
+          <p class="preview-note">
+            <strong>Try it:</strong> switch tabs to mirror the Streamlit UI. Changing dataset or engines updates the metrics above.
+            “Run” buttons show a mock log — real benchmarks run in Streamlit only.
+          </p>
 
-        <div class="two-col">
-          <div>
-            <h3 style="font-size:1rem;margin:0 0 0.65rem;font-weight:600;color:var(--text);">Sidebar</h3>
-            <ul class="sidebar-list">
-              <li><strong>Dataset:</strong> Yellow Taxi sample, NYS Tax sample, or upload CSV / Parquet.</li>
-              <li><strong>Optional lookup:</strong> Taxi zone CSV for <code>Borough</code> join templates.</li>
-              <li><strong>Engines:</strong> multiselect (e.g. DuckDB, Polars, SQLAlchemy).</li>
-              <li><strong>Template + runs:</strong> preset SQL grouped by datetime, agg, joins, windows; averages over N runs.</li>
-            </ul>
+          <p style="margin: 0 0 0.5rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 600;">
+            Tabs (click)
+          </p>
+          <div class="tab-pills" role="tablist" aria-label="Dashboard tabs">
+            <button type="button" class="tab-pill is-active" role="tab" id="tab-bench" aria-selected="true" aria-controls="panel-bench" data-tab="bench">⚡ Benchmark</button>
+            <button type="button" class="tab-pill" role="tab" id="tab-viz" aria-selected="false" aria-controls="panel-viz" data-tab="viz">📊 Query &amp; visualize</button>
+            <button type="button" class="tab-pill" role="tab" id="tab-data" aria-selected="false" aria-controls="panel-data" data-tab="data">🗂 Data preview</button>
+            <button type="button" class="tab-pill" role="tab" id="tab-schema" aria-selected="false" aria-controls="panel-schema" data-tab="schema">🔬 Schema &amp; stats</button>
+            <button type="button" class="tab-pill" role="tab" id="tab-guide" aria-selected="false" aria-controls="panel-guide" data-tab="guide">📖 Engine guide</button>
           </div>
-          <div>
-            <h3 style="font-size:1rem;margin:0 0 0.65rem;font-weight:600;color:var(--text);">⚡ Benchmark — SQL query</h3>
-            <p style="font-size: 0.9rem; color: var(--muted); margin: 0 0 0.5rem;">
-              <strong>From sidebar template</strong> · then <strong>▶ Run Benchmark</strong>. Below it,
-              <strong>Custom query</strong> · <strong>▶ Run Custom Query</strong> (independent SQL).
-              Placeholders <code>{table}</code> and <code>{lookup_table}</code> are filled automatically.
-            </p>
-            <p style="font-size: 0.75rem; color: var(--muted); margin: 0 0 0.35rem;">
-              Example (“DateTime: Extract hour…”) · Yellow Taxi columns:
-              <code style="background:#efede9;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.82em;">
-                tpep_pickup_datetime</code>,
-              <code style="background:#efede9;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.82em;">
-                fare_amount</code>, …
-            </p>
-            <pre class="sql-snippet" tabindex="0"><code><span class="kw">SELECT</span> CAST(strftime('%H', tpep_pickup_datetime) <span class="kw">AS</span> INTEGER) <span class="kw">AS</span> pickup_hour,
+
+          <div class="two-col preview-main">
+            <aside class="preview-sidebar-col" aria-label="Sidebar preview">
+              <div class="preview-sidebar-box">
+                <h4>⚡ Configuration</h4>
+                <div class="section-header-mini">Dataset</div>
+                <div class="radio-stack" id="dataset-radios">
+                  <label><input type="radio" name="dataset-demo" value="taxi" checked> Yellow Taxi Sample (built-in)</label>
+                  <label><input type="radio" name="dataset-demo" value="nys"> NYS Tax Sample (built-in)</label>
+                  <label><input type="radio" name="dataset-demo" value="upload"> Upload CSV / Parquet</label>
+                </div>
+                <p id="dataset-hint" style="font-size:0.78rem;color:var(--muted);margin:0.5rem 0 0;">Synthetic trips · <code>tpep_pickup_datetime</code>, fares, zones…</p>
+              </div>
+              <div class="preview-sidebar-box">
+                <div class="section-header-mini">Engines</div>
+                <div class="check-stack" id="engine-checks">
+                  <label><input type="checkbox" class="eng-chk" value="duck" checked> DuckDB</label>
+                  <label><input type="checkbox" class="eng-chk" value="polars" checked> Polars</label>
+                  <label><input type="checkbox" class="eng-chk" value="sqla" checked> SQLAlchemy</label>
+                  <label><input type="checkbox" class="eng-chk" value="spark"> PySpark</label>
+                  <label><input type="checkbox" class="eng-chk" value="dask"> Dask-SQL</label>
+                  <label><input type="checkbox" class="eng-chk" value="pg"> psycopg2</label>
+                </div>
+              </div>
+            </aside>
+
+            <div class="preview-panels">
+              <div id="panel-bench" class="tab-panel is-active" role="tabpanel" aria-labelledby="tab-bench" data-panel="bench">
+                <div class="section-header-mini">SQL query</div>
+                <p style="font-size: 0.88rem; color: var(--muted); margin: 0 0 0.75rem;">
+                  <strong>From sidebar template</strong> → <strong>▶ Run Benchmark</strong>.
+                  <strong>Custom query</strong> → <strong>▶ Run Custom Query</strong>.
+                </p>
+                <p style="font-size: 0.75rem; color: var(--muted); margin: 0 0 0.35rem;">
+                  Template SQL uses <code>{table}</code> / <code>{lookup_table}</code> (filled in the app).
+                </p>
+                <pre class="sql-snippet" tabindex="0"><code><span class="kw">SELECT</span> CAST(strftime('%H', tpep_pickup_datetime) <span class="kw">AS</span> INTEGER) <span class="kw">AS</span> pickup_hour,
        COUNT(*) <span class="kw">AS</span> trip_count
 <span class="kw">FROM</span> trips
 <span class="kw">GROUP BY</span> pickup_hour
 <span class="kw">ORDER BY</span> pickup_hour</code></pre>
-            <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">
-              Templates prefer <strong><code>strftime</code></strong>-style SQL so
-              <strong>SQLAlchemy (SQLite)</strong> matches DuckDB / Polars for common demos.
-            </p>
+                <button type="button" class="demo-btn" id="btn-run-bench">▶ Run Benchmark</button>
+                <div id="out-bench" class="demo-output" aria-live="polite"></div>
+
+                <div class="section-header-mini" style="margin-top:1.25rem;">Custom query</div>
+                <pre class="sql-snippet"><code><span class="kw">SELECT</span> * <span class="kw">FROM</span> trips <span class="kw">LIMIT</span> 20</code></pre>
+                <button type="button" class="demo-btn" id="btn-run-custom">▶ Run Custom Query</button>
+                <div id="out-custom" class="demo-output" aria-live="polite"></div>
+              </div>
+
+              <div id="panel-viz" class="tab-panel" role="tabpanel" aria-labelledby="tab-viz" data-panel="viz">
+                <div class="section-header-mini">Engine &amp; query</div>
+                <p style="font-size:0.9rem;color:var(--muted);margin:0 0 1rem;">
+                  Pick one engine, run SQL, then choose chart type: <strong>Auto</strong>, bar, line, scatter, histogram, or table only —
+                  same flow as Streamlit’s <strong>Query &amp; Visualize</strong> tab.
+                </p>
+                <div class="preview-card" style="margin:0;max-width:22rem;">
+                  <div class="label">Demo chart</div>
+                  <div style="height:120px;background:linear-gradient(180deg,#efede9,#faf8f6);border-radius:8px;display:flex;align-items:flex-end;padding:0.5rem;gap:4px;">
+                    <span style="flex:1;background:#9b8fd4;height:45%;border-radius:4px 4px 0 0;"></span>
+                    <span style="flex:1;background:#b8dfd7;height:75%;border-radius:4px 4px 0 0;"></span>
+                    <span style="flex:1;background:#d4a5c7;height:55%;border-radius:4px 4px 0 0;"></span>
+                    <span style="flex:1;background:#9b8fd4;height:90%;border-radius:4px 4px 0 0;"></span>
+                  </div>
+                  <p style="font-size:0.78rem;color:var(--muted);margin:0.5rem 0 0;">Placeholder bars — Plotly renders live in Streamlit.</p>
+                </div>
+              </div>
+
+              <div id="panel-data" class="tab-panel" role="tabpanel" aria-labelledby="tab-data" data-panel="data">
+                <div class="section-header-mini">Dataset preview</div>
+                <p style="font-size:0.88rem;color:var(--muted);margin:0 0 0.75rem;">Filter, sort, row limit — interactive table in the app.</p>
+                <table style="width:100%;font-size:0.82rem;border-collapse:collapse;">
+                  <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);font-size:0.72rem;text-transform:uppercase;"><th>trip_distance</th><th>fare_amount</th><th>payment_type</th></tr></thead>
+                  <tbody>
+                    <tr style="border-bottom:1px solid #ebe8e4;"><td>3.2</td><td>14.50</td><td>1</td></tr>
+                    <tr style="border-bottom:1px solid #ebe8e4;"><td>8.1</td><td>32.00</td><td>2</td></tr>
+                    <tr><td>1.4</td><td>9.00</td><td>1</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="panel-schema" class="tab-panel" role="tabpanel" aria-labelledby="tab-schema" data-panel="schema">
+                <div class="section-header-mini">Schema</div>
+                <p style="font-size:0.88rem;color:var(--muted);margin:0 0 0.75rem;">Per-column dtype, null %, describe, correlation heatmap in Streamlit.</p>
+                <table style="width:100%;font-size:0.82rem;border-collapse:collapse;">
+                  <thead><tr style="border-bottom:1px solid var(--border);color:var(--muted);"><th>Column</th><th>dtype</th></tr></thead>
+                  <tbody>
+                    <tr style="border-bottom:1px solid #ebe8e4;"><td>tpep_pickup_datetime</td><td>datetime64</td></tr>
+                    <tr style="border-bottom:1px solid #ebe8e4;"><td>fare_amount</td><td>float64</td></tr>
+                    <tr><td>trip_distance</td><td>float64</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="panel-guide" class="tab-panel" role="tabpanel" aria-labelledby="tab-guide" data-panel="guide">
+                <div class="section-header-mini">Engine reference</div>
+                <ul class="sidebar-list" style="margin:0;">
+                  <li><strong>DuckDB</strong> — embedded OLAP, fast local analytics.</li>
+                  <li><strong>Polars</strong> — Rust DataFrames + SQL context.</li>
+                  <li><strong>SQLAlchemy</strong> — SQLite in-memory in this dashboard.</li>
+                  <li><strong>PySpark</strong> — needs Java; cluster-scale.</li>
+                  <li><strong>Dask-SQL</strong> — parallel pandas SQL.</li>
+                  <li><strong>psycopg2</strong> — PostgreSQL (needs a server).</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
