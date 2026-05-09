@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="SQL Engine Benchmark Dashboard — compare DuckDB, Polars, PySpark, SQLAlchemy, Dask-SQL, and psycopg2.">
+  <meta name="description" content="SQL Engine Benchmark Dashboard — DuckDB, Polars, SQLAlchemy, PySpark, Dask-SQL, psycopg2 with Yellow Taxi and NYS Tax samples.">
   <title>SQL Engine Benchmark Dashboard</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/styles.css">
@@ -18,6 +18,7 @@
       </button>
       <nav id="site-nav" class="site-nav" aria-label="Primary">
         <ul>
+          <li><a href="#preview">App layout</a></li>
           <li><a href="#overview">Overview</a></li>
           <li><a href="#run">Run locally</a></li>
           <li><a href="../index.html">Main site</a></li>
@@ -32,15 +33,94 @@
       <div class="hero-inner">
         <a class="back-link" href="../index.html">← Main site</a>
         <p class="eyebrow">Analytics &amp; benchmarking</p>
-        <h1>SQL engines on the same query &amp; dataset</h1>
+        <h1>SQL Engine Benchmark Dashboard</h1>
+        <p class="hero-subtitle">
+          PySpark · DuckDB · Dask-SQL · SQLAlchemy · psycopg2 · Polars — NYS Tax Data &amp; Beyond
+        </p>
         <p class="lede">
-          Run preset or custom SQL against <strong>DuckDB</strong>, <strong>Polars</strong>, <strong>SQLAlchemy</strong> (SQLite),
-          optional <strong>PySpark</strong>, <strong>Dask-SQL</strong>, and <strong>psycopg2</strong> — with timing charts,
-          Yellow Taxi or NYS Tax built-ins, and joins to a zone lookup CSV when you need them.
+          Compare latency on the <strong>same SQL</strong> across engines, with built‑in <strong>Yellow Taxi</strong>
+          or <strong>NYS Tax</strong> samples, optional zone lookup CSV for joins, and separate
+          <strong>Run Benchmark</strong> vs <strong>Run Custom Query</strong> flows in Streamlit.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#run">Run Streamlit</a>
-          <a class="btn btn-secondary" href="../sql_engine_benchmark.html">Open static HTML demo</a>
+          <a class="btn btn-secondary" href="#preview">See layout</a>
+          <a class="btn btn-secondary" href="../sql_engine_benchmark.html">Static chart demo</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="preview" class="section section-alt">
+      <div class="section-inner">
+        <h2>Inside the Streamlit app</h2>
+        <p style="margin: 0 0 1rem; color: var(--muted); font-size: 0.975rem;">
+          Mock‑up of the main screen (sidebar + benchmarks) — numbers are illustrative unless you choose the same options in app.
+        </p>
+
+        <div class="preview-row" aria-label="Overview metrics">
+          <div class="preview-card">
+            <div class="label">Dataset rows</div>
+            <div class="value">50,000<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> rows</span></div>
+          </div>
+          <div class="preview-card">
+            <div class="label">Columns</div>
+            <div class="value">10<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> cols</span></div>
+          </div>
+          <div class="preview-card">
+            <div class="label">Memory</div>
+            <div class="value">~7<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> MB</span></div>
+          </div>
+          <div class="preview-card">
+            <div class="label">Engines selected</div>
+            <div class="value">3<span style="font-size:0.75rem;font-weight:600;color:var(--muted)"> / 6</span></div>
+          </div>
+        </div>
+
+        <p style="margin: 0 0 0.5rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 600;">
+          Tabs
+        </p>
+        <div class="tab-pills" role="tablist" aria-label="Dashboard tabs">
+          <span class="tab-pill is-active" aria-current="true">⚡ Benchmark</span>
+          <span class="tab-pill">📊 Query &amp; visualize</span>
+          <span class="tab-pill">🗂 Data preview</span>
+          <span class="tab-pill">🔬 Schema &amp; stats</span>
+          <span class="tab-pill">📖 Engine guide</span>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <h3 style="font-size:1rem;margin:0 0 0.65rem;font-weight:600;color:var(--text);">Sidebar</h3>
+            <ul class="sidebar-list">
+              <li><strong>Dataset:</strong> Yellow Taxi sample, NYS Tax sample, or upload CSV / Parquet.</li>
+              <li><strong>Optional lookup:</strong> Taxi zone CSV for <code>Borough</code> join templates.</li>
+              <li><strong>Engines:</strong> multiselect (e.g. DuckDB, Polars, SQLAlchemy).</li>
+              <li><strong>Template + runs:</strong> preset SQL grouped by datetime, agg, joins, windows; averages over N runs.</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="font-size:1rem;margin:0 0 0.65rem;font-weight:600;color:var(--text);">⚡ Benchmark — SQL query</h3>
+            <p style="font-size: 0.9rem; color: var(--muted); margin: 0 0 0.5rem;">
+              <strong>From sidebar template</strong> · then <strong>▶ Run Benchmark</strong>. Below it,
+              <strong>Custom query</strong> · <strong>▶ Run Custom Query</strong> (independent SQL).
+              Placeholders <code>{table}</code> and <code>{lookup_table}</code> are filled automatically.
+            </p>
+            <p style="font-size: 0.75rem; color: var(--muted); margin: 0 0 0.35rem;">
+              Example (“DateTime: Extract hour…”) · Yellow Taxi columns:
+              <code style="background:#efede9;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.82em;">
+                tpep_pickup_datetime</code>,
+              <code style="background:#efede9;padding:0.1rem 0.35rem;border-radius:4px;font-size:0.82em;">
+                fare_amount</code>, …
+            </p>
+            <pre class="sql-snippet" tabindex="0"><code><span class="kw">SELECT</span> CAST(strftime('%H', tpep_pickup_datetime) <span class="kw">AS</span> INTEGER) <span class="kw">AS</span> pickup_hour,
+       COUNT(*) <span class="kw">AS</span> trip_count
+<span class="kw">FROM</span> trips
+<span class="kw">GROUP BY</span> pickup_hour
+<span class="kw">ORDER BY</span> pickup_hour</code></pre>
+            <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">
+              Templates prefer <strong><code>strftime</code></strong>-style SQL so
+              <strong>SQLAlchemy (SQLite)</strong> matches DuckDB / Polars for common demos.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -50,20 +130,22 @@
         <h2>What’s included</h2>
         <ul class="feature-list">
           <li>
-            <strong>Streamlit app</strong> — <code>SQL_Engine_Benchmark_Dashboard/app.py</code> · benchmark tab, query &amp; viz,
-            data preview, schema, engine guide, and “how to fix” hints when an engine fails.
+            <strong>Streamlit app</strong> — <code>SQL_Engine_Benchmark_Dashboard/app.py</code> · leaderboard, execution log,
+            “how to fix” hints, Query &amp; Visualize charts, taxi / tax templates, uploads.
           </li>
           <li>
-            <strong>Built-in data</strong> — synthetic <strong>Yellow Taxi</strong>-style trips (shared templates) or
-            <strong>NYS Tax</strong> sample; upload CSV / Parquet anytime.
+            <strong>Engines at a glance</strong> — one‑line blurbs plus optional installs (PySpark needs Java,
+            psycopg2 needs Postgres for real runs).
           </li>
           <li>
-            <strong>Static demo page</strong> — <code>sql_engine_benchmark.html</code> at the repo root for a quick
-            in-browser preview (no Python), published next to the LBC static demo on GitHub Pages.
+            <strong>Soft theme</strong> — <code>.streamlit/config.toml</code> + custom CSS aligned with these pages.
           </li>
           <li>
-            <strong>This landing page</strong> — same layout pattern as <code>web/index.html</code> in the repo, kept
-            under this folder so documentation stays next to the Streamlit app.
+            <strong>This site</strong> — static landing next to the app; GitHub Pages path
+            <code>/sql_engine_benchmark/</code> when wired in CI.
+          </li>
+          <li>
+            <strong>Standalone chart demo</strong> — repo root <code>sql_engine_benchmark.html</code> for a browser‑only teaser.
           </li>
         </ul>
       </div>
@@ -71,11 +153,11 @@
 
     <section id="run" class="section section-alt">
       <div class="section-inner">
-        <h2>Run the Streamlit app locally</h2>
-        <p>From the <code>SQL_Engine_Benchmark_Dashboard</code> directory:</p>
+        <h2>Run locally</h2>
+        <p>From <code>SQL_Engine_Benchmark_Dashboard/</code>:</p>
         <pre class="code-block"><code>pip install -r requirements.txt
 streamlit run app.py</code></pre>
-        <p>Then open <strong>http://localhost:8501</strong>. Optional theme: <code>.streamlit/config.toml</code>.</p>
+        <p>Then open <strong>http://localhost:8501</strong>.</p>
       </div>
     </section>
   </main>
