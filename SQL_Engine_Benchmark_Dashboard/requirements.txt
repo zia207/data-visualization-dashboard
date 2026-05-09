@@ -1,0 +1,14 @@
+streamlit>=1.35.0
+pandas>=2.0.0
+numpy>=1.26.0
+plotly>=5.20.0
+
+# Install one or more of the engines you want to benchmark:
+duckdb>=0.10.0
+polars>=0.20.0
+sqlalchemy>=2.0.0
+
+# Optional engines (require more setup):
+# pyspark>=3.5.0       # Also needs Java 11+
+# dask-sql>=2024.1.0   # pip install dask[dataframe] dask-sql
+# psycopg2-binary      # Needs a running PostgreSQL instance

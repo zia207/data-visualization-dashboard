@@ -1,0 +1,7 @@
+# Soft theme — warm neutrals + muted accents (matches app.py CSS)
+[theme]
+base = "light"
+primaryColor = "#9b8fd4"
+backgroundColor = "#f5f3f0"
+secondaryBackgroundColor = "#efede9"
+textColor = "#3d3a45"
