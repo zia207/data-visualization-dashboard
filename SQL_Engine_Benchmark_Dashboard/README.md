@@ -1,6 +1,6 @@
 # SQL Engine Benchmark Dashboard
 
-A Streamlit dashboard that benchmarks **PySpark, DuckDB, Dask-SQL, SQLAlchemy, psycopg2, and Polars** against the NYS Tax dataset (or any CSV/Parquet you upload).
+A Streamlit dashboard that benchmarks **PySpark, DuckDB, Dask-SQL, SQLAlchemy, psycopg2, and Polars** against built-in **Yellow Taxi** or **NYS Tax** samples (or any CSV/Parquet you upload).
 
 ## Quick Start
 
@@ -9,18 +9,30 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+Open **http://localhost:8501**.
+
+## Static webpage (LBC-style)
+
+| Path | Purpose |
+|------|---------|
+| **`web/index.html`** | Landing page: overview, links to the static demo & main site, “Run locally”. |
+| **`web/css/styles.css`**, **`web/js/main.js`**, **`web/assets/favicon.svg`** | Same layout pattern as the repo root `web/` site (soft theme). |
+
+GitHub Pages publishes this folder as **`/sql_engine_benchmark/`** (see root `README.md`). The interactive chart-only preview lives at the repo root as **`sql_engine_benchmark.html`**.
+
 ## Features
 
 | Tab | What you get |
 |-----|-------------|
-| ⚡ Benchmark | Run any SQL across selected engines, see latency bar chart, leaderboard, result previews |
-| 🗂 Data Preview | Filter, sort, and explore the dataset; numeric histograms |
-| 🔬 Schema & Stats | Column types, null %, descriptive stats, correlation heatmap |
-| 📖 Engine Guide | Install commands, pros/cons, and a decision guide |
+| ⚡ Benchmark | Template / custom SQL across engines, leaderboard, “how to fix” hints |
+| 📊 Query & Visualize | Single engine, results table, Plotly charts |
+| 🗂 Data Preview | Filter, sort, explore; numeric histograms |
+| 🔬 Schema & Stats | dtypes, null %, describe, correlation heatmap |
+| 📖 Engine Guide | installs, pros/cons, picking an engine |
 
 ## Sidebar Options
 
-- **Data source** — built-in NYS Tax sample (10k–200k rows) or upload your own CSV/Parquet
+- **Data source** — Yellow Taxi sample, NYS Tax sample, or upload CSV/Parquet + optional taxi zone lookup CSV for joins
 - **Engines** — tick any combination to benchmark
 - **Query templates** — choose a preset or write custom SQL (`{table}` is the placeholder)
 - **Runs per engine** — average over N runs for stable timing

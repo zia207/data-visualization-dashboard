@@ -29,6 +29,13 @@ jobs:
           if [ -f "lbc_dashboard.html" ]; then
             cp lbc_dashboard.html _site/lbc_dashboard.html
           fi
+          if [ -f "sql_engine_benchmark.html" ]; then
+            cp sql_engine_benchmark.html _site/sql_engine_benchmark.html
+          fi
+          if [ -d "SQL_Engine_Benchmark_Dashboard/web" ]; then
+            mkdir -p _site/sql_engine_benchmark
+            cp -R SQL_Engine_Benchmark_Dashboard/web/. _site/sql_engine_benchmark/
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

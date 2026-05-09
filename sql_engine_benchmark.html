@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive preview: SQL engine latency comparison (static demo).">
+  <title>SQL Engine Benchmark — static demo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #f5f3f0;
+      color: #3d3a45;
+      padding: 1.25rem;
+      line-height: 1.5;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #ebe8e4;
+      font-size: 0.9rem;
+    }
+    .nav a { color: #7a6eb0; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    h1 {
+      font-size: clamp(1.35rem, 4vw, 1.85rem);
+      font-weight: 650;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: #6f6a7a;
+      font-size: 0.98rem;
+      margin-bottom: 1.5rem;
+      max-width: 42em;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #ebe8e4;
+      border-radius: 12px;
+      padding: 1.2rem 1.35rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 3px rgba(61, 58, 69, 0.06);
+    }
+    .card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #8b8798;
+      margin-bottom: 0.85rem;
+      font-weight: 600;
+    }
+    .btn {
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      border: 1px solid #c9c2db;
+      background: linear-gradient(135deg, #e8e4f4, #ddefee);
+      color: #3d3a45;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn:hover {
+      border-color: #9b8fd4;
+      background: linear-gradient(135deg, #ddd5f0, #cee8e4);
+    }
+    .grid-check {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.45rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+    .grid-check label { cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
+    .chart-wrap { position: relative; height: 220px; margin-top: 0.5rem; }
+    table {
+      width: 100%;
+      font-size: 0.85rem;
+      border-collapse: collapse;
+    }
+    th, td { text-align: left; padding: 0.5rem 0.35rem; border-bottom: 1px solid #ebe8e4; }
+    th { color: #8b8798; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    tr.best td { background: #f3f0fa; font-weight: 600; }
+    .pill { font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px; background: #efede9; color: #6f6a7a; }
+    .note {
+      font-size: 0.82rem;
+      color: #6f6a7a;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #faf8f6;
+      border-radius: 8px;
+      border-left: 3px solid #9b8fd4;
+    }
+    code { font-size: 0.88em; background: #efede9; padding: 0.1em 0.35em; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Breadcrumb">
+    <a href="index.html">Main site</a>
+    <span aria-hidden="true">·</span>
+    <a href="sql_engine_benchmark/index.html">SQL dashboard landing</a>
+  </nav>
+
+  <h1>SQL Engine Benchmark</h1>
+  <p class="sub">
+    Static preview only — sample latencies (ms) for a synthetic query. The real app is Streamlit:
+    <code>SQL_Engine_Benchmark_Dashboard</code> → <code>streamlit run app.py</code>.
+  </p>
+
+  <div class="card">
+    <h2>Simulate run</h2>
+    <p style="font-size:0.9rem;color:#6f6a7a;margin-bottom:0.5rem">Toggle engines, then run (randomized noise around base speeds).</p>
+    <div class="grid-check" id="engine-toggles"></div>
+    <button type="button" class="btn" id="run-sim">▶ Run benchmark (demo)</button>
+    <div class="chart-wrap">
+      <canvas id="lat-chart" aria-label="Latency bar chart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Results</h2>
+    <table>
+      <thead>
+        <tr><th>Engine</th><th>Avg (ms)</th><th>Note</th></tr>
+      </thead>
+      <tbody id="result-body"></tbody>
+    </table>
+    <p class="note">
+      Open the <a href="sql_engine_benchmark/index.html">project landing page</a> for install notes and GitHub Pages links.
+      This page is copied to the site root as <code>sql_engine_benchmark.html</code> when Pages deploys.
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      var engines = [
+        { id: "duckdb", name: "DuckDB", color: "#facc15", base: 12 },
+        { id: "polars", name: "Polars", color: "#f43f5e", base: 18 },
+        { id: "sqlalchemy", name: "SQLAlchemy", color: "#34d399", base: 35 },
+        { id: "dask", name: "Dask-SQL", color: "#a78bfa", base: 55 },
+        { id: "spark", name: "PySpark", color: "#f97316", base: 220 },
+        { id: "pg", name: "psycopg2", color: "#60a5fa", base: 28 }
+      ];
+      var toggles = document.getElementById("engine-toggles");
+      engines.forEach(function (e) {
+        var id = "eng-" + e.id;
+        var lab = document.createElement("label");
+        lab.innerHTML = '<input type="checkbox" id="' + id + '" data-eng="' + e.id + '" checked> ' + e.name;
+        toggles.appendChild(lab);
+      });
+
+      var ctx = document.getElementById("lat-chart").getContext("2d");
+      var chart = new Chart(ctx, {
+        type: "bar",
+        data: { labels: [], datasets: [{ label: "Avg latency (ms)", data: [], backgroundColor: [] }] },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: "#ebe8e4" }, ticks: { color: "#8b8798" } },
+            y: { grid: { display: false }, ticks: { color: "#3d3a45" } }
+          }
+        }
+      });
+
+      function runSim() {
+        var rows = [];
+        engines.forEach(function (e) {
+          var cb = document.getElementById("eng-" + e.id);
+          if (!cb || !cb.checked) return;
+          var ms = Math.max(1, e.base * (0.75 + Math.random() * 0.6));
+          rows.push({ name: e.name, ms: ms, color: e.color });
+        });
+        rows.sort(function (a, b) { return a.ms - b.ms; });
+        var fastest = rows.length ? rows[0].ms : 1;
+
+        chart.data.labels = rows.map(function (r) { return r.name; });
+        chart.data.datasets[0].data = rows.map(function (r) { return Number(r.ms.toFixed(2)); });
+        chart.data.datasets[0].backgroundColor = rows.map(function (r) { return r.color; });
+        chart.update();
+
+        var tb = document.getElementById("result-body");
+        tb.innerHTML = "";
+        rows.forEach(function (r, i) {
+          var tr = document.createElement("tr");
+          if (i === 0) tr.className = "best";
+          var note = i === 0 ? "fastest" : (r.ms / fastest).toFixed(2) + "× vs fastest";
+          tr.innerHTML = "<td>" + r.name + "</td><td>" + r.ms.toFixed(2) + "</td><td><span class=\"pill\">" + note + "</span></td>";
+          tb.appendChild(tr);
+        });
+      }
+
+      document.getElementById("run-sim").addEventListener("click", runSim);
+      runSim();
+    })();
+  </script>
+</body>
+</html>

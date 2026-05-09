@@ -2,13 +2,15 @@
 
 This repo contains:
 
-- `lbc_dashboard/`: Streamlit ML dashboard (run locally with Python)
-- `lbc_dashboard.html`: standalone HTML dashboard demo
-- `web/`: a small static landing page
+- `LBC_Dashboard/lbc_dashboard/` (or `lbc_dashboard/`): Streamlit ML dashboard (run locally with Python)
+- `SQL_Engine_Benchmark_Dashboard/`: Streamlit SQL engine benchmark dashboard + `SQL_Engine_Benchmark_Dashboard/web/` landing page
+- `lbc_dashboard.html`: standalone LBC HTML demo
+- `sql_engine_benchmark.html`: standalone SQL benchmark HTML demo (sample chart)
+- `web/`: main static landing page (GitHub Pages)
 
 ## Static website (GitHub Pages)
 
-The published site comes from **`web/`** via **GitHub Actions** (workflow `Deploy GitHub Pages`). The workflow also copies `lbc_dashboard.html` next to the landing page so the “Static demo” link works.
+The published site comes from **`web/`** via **GitHub Actions** (workflow `Deploy GitHub Pages`). The workflow also copies **`lbc_dashboard.html`**, **`sql_engine_benchmark.html`**, and the **`SQL_Engine_Benchmark_Dashboard/web`** tree into `_site/` so the static demos and SQL landing URLs work.
 
 **If you see a GitHub Pages 404**, it almost always means the repo is not deploying yet (or Deploy failed):
 
@@ -20,12 +22,24 @@ The published site comes from **`web/`** via **GitHub Actions** (workflow `Deplo
 After the first successful run, try:
 
 - `https://zia207.github.io/data-visualization-dashboard/`
-- Static demo (same Pages deployment): `https://zia207.github.io/data-visualization-dashboard/lbc_dashboard.html`
+- LBC static demo: `https://zia207.github.io/data-visualization-dashboard/lbc_dashboard.html`
+- SQL engine landing (docs + links): `https://zia207.github.io/data-visualization-dashboard/sql_engine_benchmark/`
+- SQL static chart demo: `https://zia207.github.io/data-visualization-dashboard/sql_engine_benchmark.html`
 
-## Run the Streamlit app locally
+## Run the Streamlit apps locally
+
+**LBC**
 
 ```bash
-cd lbc_dashboard
+cd LBC_Dashboard/lbc_dashboard
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+**SQL Engine Benchmark**
+
+```bash
+cd SQL_Engine_Benchmark_Dashboard
 pip install -r requirements.txt
 streamlit run app.py
 ```

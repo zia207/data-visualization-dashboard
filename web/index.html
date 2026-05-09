@@ -20,7 +20,9 @@
         <ul>
           <li><a href="#overview">Overview</a></li>
           <li><a href="#run">Run locally</a></li>
-          <li><a href="lbc_dashboard.html">Static demo</a></li>
+          <li><a href="sql_engine_benchmark/">SQL benchmarks</a></li>
+          <li><a href="sql_engine_benchmark.html">SQL static demo</a></li>
+          <li><a href="lbc_dashboard.html">LBC static demo</a></li>
         </ul>
       </nav>
     </div>
@@ -37,7 +39,8 @@
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#run">Run Streamlit</a>
-          <a class="btn btn-secondary" href="lbc_dashboard.html">Open static HTML</a>
+          <a class="btn btn-secondary" href="lbc_dashboard.html">Open LBC HTML</a>
+          <a class="btn btn-secondary" href="sql_engine_benchmark/">SQL engine site</a>
         </div>
       </div>
     </section>
@@ -48,15 +51,20 @@
         <ul class="feature-list">
           <li>
             <strong>Streamlit dashboard</strong> — EDA, splits, models, metrics, training, and importance views
-            under <code>lbc_dashboard/</code>.
+            under <code>LBC_Dashboard/lbc_dashboard/</code> (or legacy <code>lbc_dashboard/</code> paths in older clones).
           </li>
           <li>
-            <strong>Standalone page</strong> — <code>lbc_dashboard.html</code> at the repo root for quick viewing
+            <strong>SQL Engine Benchmark</strong> — DuckDB · Polars · SQLAlchemy · optional PySpark, Dask-SQL, psycopg2 —
+            landing at <code>sql_engine_benchmark/</code> and static demo <code>sql_engine_benchmark.html</code>, app under
+            <code>SQL_Engine_Benchmark_Dashboard/</code>.
+          </li>
+          <li>
+            <strong>LBC standalone page</strong> — <code>lbc_dashboard.html</code> at the repo root for quick viewing
             without Python.
           </li>
           <li>
-            <strong>This site</strong> — minimal HTML, CSS, and JS in <code>web/</code> as a template you can
-            extend or host (e.g. GitHub Pages with the <code>web</code> folder as the publish root).
+            <strong>This site</strong> — minimal HTML, CSS, and JS in <code>web/</code> published as GitHub Pages
+            (workflow copies static demos and SQL landing into <code>_site</code>).
           </li>
         </ul>
       </div>

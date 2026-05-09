@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SQL Engine Benchmark Dashboard — compare DuckDB, Polars, PySpark, SQLAlchemy, Dask-SQL, and psycopg2.">
+  <title>SQL Engine Benchmark Dashboard</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="index.html">SQL Engine Benchmark</a>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav">
+        Menu
+      </button>
+      <nav id="site-nav" class="site-nav" aria-label="Primary">
+        <ul>
+          <li><a href="#overview">Overview</a></li>
+          <li><a href="#run">Run locally</a></li>
+          <li><a href="../index.html">Main site</a></li>
+          <li><a href="../sql_engine_benchmark.html">Static demo</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="hero-inner">
+        <a class="back-link" href="../index.html">← Main site</a>
+        <p class="eyebrow">Analytics &amp; benchmarking</p>
+        <h1>SQL engines on the same query &amp; dataset</h1>
+        <p class="lede">
+          Run preset or custom SQL against <strong>DuckDB</strong>, <strong>Polars</strong>, <strong>SQLAlchemy</strong> (SQLite),
+          optional <strong>PySpark</strong>, <strong>Dask-SQL</strong>, and <strong>psycopg2</strong> — with timing charts,
+          Yellow Taxi or NYS Tax built-ins, and joins to a zone lookup CSV when you need them.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#run">Run Streamlit</a>
+          <a class="btn btn-secondary" href="../sql_engine_benchmark.html">Open static HTML demo</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="section">
+      <div class="section-inner">
+        <h2>What’s included</h2>
+        <ul class="feature-list">
+          <li>
+            <strong>Streamlit app</strong> — <code>SQL_Engine_Benchmark_Dashboard/app.py</code> · benchmark tab, query &amp; viz,
+            data preview, schema, engine guide, and “how to fix” hints when an engine fails.
+          </li>
+          <li>
+            <strong>Built-in data</strong> — synthetic <strong>Yellow Taxi</strong>-style trips (shared templates) or
+            <strong>NYS Tax</strong> sample; upload CSV / Parquet anytime.
+          </li>
+          <li>
+            <strong>Static demo page</strong> — <code>sql_engine_benchmark.html</code> at the repo root for a quick
+            in-browser preview (no Python), published next to the LBC static demo on GitHub Pages.
+          </li>
+          <li>
+            <strong>This landing page</strong> — same layout pattern as <code>web/index.html</code> in the repo, kept
+            under this folder so documentation stays next to the Streamlit app.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="run" class="section section-alt">
+      <div class="section-inner">
+        <h2>Run the Streamlit app locally</h2>
+        <p>From the <code>SQL_Engine_Benchmark_Dashboard</code> directory:</p>
+        <pre class="code-block"><code>pip install -r requirements.txt
+streamlit run app.py</code></pre>
+        <p>Then open <strong>http://localhost:8501</strong>. Optional theme: <code>.streamlit/config.toml</code>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p><span data-year></span> SQL Engine Benchmark Dashboard.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
